@@ -1,0 +1,287 @@
+<title>Tablero TP Distribuidora</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: header + progress strip + milestone rail, then task rows grouped by phase */
+:root{
+  --bg:#f3f6f6; --surface:#ffffff; --fg:#14272b; --muted:#5b6f73; --line:#d7e1e2;
+  --accent:#0d6b73; --accent-soft:#dcefef; --amber:#b86a00; --amber-soft:#fbecd3;
+  --ok:#2f7d32; --ok-soft:#e1f1e1; --wait:#8a8f91; --wait-soft:#eceeef;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Figtree",ui-sans-serif,system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1a1c; --surface:#152427; --fg:#e4eeef; --muted:#9ab0b3; --line:#28403f;
+  --accent:#5cc3cb; --accent-soft:#163c40; --amber:#f0a945; --amber-soft:#3a2a12;
+  --ok:#7ccf80; --ok-soft:#1b3a1e; --wait:#8d9a9c; --wait-soft:#1f2d30; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1a1c; --surface:#152427; --fg:#e4eeef; --muted:#9ab0b3; --line:#28403f;
+  --accent:#5cc3cb; --accent-soft:#163c40; --amber:#f0a945; --amber-soft:#3a2a12;
+  --ok:#7ccf80; --ok-soft:#1b3a1e; --wait:#8d9a9c; --wait-soft:#1f2d30; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:28px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(1.7rem,4vw,2.4rem);line-height:1.1;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.15rem;margin:0}
+.sub{color:var(--muted);margin:6px 0 0;max-width:65ch}
+.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.sync{font-size:.8rem;color:var(--muted);margin-top:8px}
+.sync b{color:var(--amber)}
+
+/* People */
+.people{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.person{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:8px;min-width:0}
+.person input{font:inherit;font-weight:600;border:1px solid transparent;background:transparent;color:var(--fg);padding:2px 4px;margin-left:-5px;border-radius:6px;width:100%}
+.person input:hover{border-color:var(--line)}
+.person input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.bar{height:8px;background:var(--wait-soft);border-radius:4px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.bar .d{background:var(--ok)} .bar .p{background:var(--amber)}
+.pmeta{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted)}
+
+/* Milestones */
+.rail{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;border-top:2px solid var(--line);padding-top:0}
+.ms{padding:10px 8px 0 0;position:relative;font-size:.85rem}
+.ms::before{content:"";position:absolute;top:-7px;left:0;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--line)}
+.ms.past::before{background:var(--accent);border-color:var(--accent)}
+.ms.now::before{background:var(--amber);border-color:var(--amber);box-shadow:0 0 0 4px var(--amber-soft)}
+.ms .date{font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
+.ms.now .date{color:var(--amber);font-weight:600}
+@media (max-width:640px){.rail{grid-template-columns:1fr 1fr;row-gap:14px}}
+
+/* Filters */
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:5px 12px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.chip:focus-visible,.seg button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Tasks */
+.phase{display:grid;gap:10px}
+.phase-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.phase-head .eyebrow{font-family:var(--f-mono)}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:6px 16px;align-items:start}
+.task.done{opacity:.62}
+.task.done .ttl{text-decoration:line-through;text-decoration-color:var(--muted)}
+.tid{font-family:var(--f-mono);font-size:.95rem;font-weight:500;color:var(--accent);display:grid;gap:4px}
+.crit{font-family:var(--f-body);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--amber);font-weight:600}
+.body{display:grid;gap:6px;min-width:0}
+.ttl{font-weight:600}
+.dod{font-size:.88rem;color:var(--muted)}
+.dod b{color:var(--fg);font-weight:500}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.8rem}
+.tag{border-radius:5px;padding:1px 7px;background:var(--wait-soft);color:var(--muted);font-family:var(--f-mono)}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}
+.tag.block{background:var(--amber-soft);color:var(--amber)}
+.ctrl{display:grid;gap:8px;justify-items:end}
+select{font:inherit;font-size:.85rem;padding:4px 6px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{font:inherit;font-size:.8rem;border:0;background:var(--surface);color:var(--muted);padding:5px 10px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"][data-s="pendiente"]{background:var(--wait-soft);color:var(--fg);font-weight:600}
+.seg button[aria-pressed="true"][data-s="en_curso"]{background:var(--amber-soft);color:var(--amber);font-weight:600}
+.seg button[aria-pressed="true"][data-s="hecha"]{background:var(--ok-soft);color:var(--ok);font-weight:600}
+.seg button:disabled{cursor:default}
+@media (max-width:640px){.task{grid-template-columns:1fr}.tid{grid-auto-flow:column;justify-content:start;align-items:baseline;gap:10px}.ctrl{justify-items:start}}
+.empty{color:var(--muted);font-size:.9rem}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .3s ease}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Metodología de Sistemas II · Entrega 10 nov 2026</div>
+    <h1>Distribuidora de bebidas: tablero del TP</h1>
+    <p class="sub">Cada tarea muestra de qué depende y cuándo está terminada. Cambiá el estado y el responsable; el grupo ve los cambios al instante.</p>
+    <div class="sync" id="sync">Conectando…</div>
+  </header>
+
+  <section aria-labelledby="h-people" style="display:grid;gap:12px">
+    <h2 id="h-people">Avance por persona</h2>
+    <div class="people" id="people"></div>
+  </section>
+
+  <section aria-labelledby="h-ms" style="display:grid;gap:14px">
+    <h2 id="h-ms">Hitos</h2>
+    <div class="rail" id="rail"></div>
+  </section>
+
+  <section style="display:grid;gap:18px">
+    <div class="filters" id="filters" role="group" aria-label="Filtrar tareas"></div>
+    <div id="tasks" style="display:grid;gap:26px"></div>
+  </section>
+</div>
+
+<script>
+const PEOPLE = ["P1","P2","P3","P4"];
+const ROLE = {P1:"Base de datos y reportes",P2:"Backend principal",P3:"Autenticación y pedidos",P4:"Frontend",TODOS:"Todo el grupo"};
+const CRIT = new Set(["T0","D1","D3","B5","F5","I1"]);
+const PHASES = [
+  ["arranque","Fase 0 · Arranque"],["db","Base de datos"],["back","Backend"],["front","Frontend"],["cierre","Cierre"]
+];
+const TASKS = [
+  {id:"T0",ph:"arranque",who:"TODOS",h:16,t:"Modelo E/R final, contrato de la API, repositorio y convenciones",dep:[],dod:"Documento en el repo con endpoints y JSON de ejemplo, diagrama E/R exportado, carpetas creadas y README para levantar el proyecto."},
+  {id:"D1",ph:"db",who:"P1",h:4,t:"Script de creación de tablas con PK, FK, CHECK, UNIQUE y ON DELETE RESTRICT",dep:["T0"],dod:"Corre sin errores en un MySQL 8 vacío; stock negativo y borrar un producto con pedidos dan error."},
+  {id:"D2",ph:"db",who:"P1",h:3,t:"Datos de prueba",dep:["D1"],dod:"1 usuario por rol, 30 productos, 6 proveedores, 15 clientes de 3 zonas y 40 pedidos en 3 meses."},
+  {id:"D3",ph:"db",who:"P1",h:5,t:"sp_confirmar_pedido con COMMIT y ROLLBACK",dep:["D1"],dod:"Script de prueba con los dos casos: pedido confirmado (stock descontado y movimientos) y rechazado (stock igual)."},
+  {id:"D4",ph:"db",who:"P1",h:4,t:"Las 3 consultas: INNER JOIN, subconsulta y GROUP BY",dep:["D2"],dod:"Resultados coherentes con los datos de prueba, guardadas en un archivo .sql."},
+  {id:"B1",ph:"back",who:"P2",h:5,t:"Capas, conexión asíncrona con aiomysql, .env y manejo de errores",dep:["T0"],dod:"/health consulta la base y responde; ningún router ejecuta SQL directo."},
+  {id:"B2",ph:"back",who:"P3",h:6,t:"Autenticación JWT: login, bcrypt, get_current_user y require_role",dep:["B1","D1"],dod:"Sin token 401, rol sin permiso 403, el token vence."},
+  {id:"B3",ph:"back",who:"P2",h:8,t:"CRUD de categorías, proveedores y productos con Pydantic",dep:["B1","D1"],dod:"Los 4 verbos andan en Swagger; un dato inválido devuelve 422."},
+  {id:"B4",ph:"back",who:"P2",h:3,t:"CRUD de clientes",dep:["B3"],dod:"Igual que B3."},
+  {id:"B5",ph:"back",who:"P3",h:8,t:"Pedidos: crear pendiente, cancelar y confirmar con el procedimiento",dep:["B2","D3"],dod:"Sin stock responde 409 con el nombre del producto; el pedido confirmado cambia de estado."},
+  {id:"B6",ph:"back",who:"P2",h:3,t:"Ingreso de mercadería (movimiento de ENTRADA)",dep:["B3"],dod:"Suma stock y registra el movimiento."},
+  {id:"B7",ph:"back",who:"P1",h:5,t:"Endpoints de reportes e indicadores del dashboard",dep:["D4","B1"],dod:"Devuelven las 3 consultas, filtrables por fecha."},
+  {id:"F1",ph:"front",who:"P4",h:5,t:"Vite, router, layout y cliente de API con token",dep:["T0"],dod:"Navega entre pantallas; un 401 redirige al login."},
+  {id:"F2",ph:"front",who:"P3",h:5,t:"Login y rutas protegidas por rol",dep:["F1"],dod:"Cada rol ve solo su menú (con datos simulados hasta tener B2)."},
+  {id:"F3",ph:"front",who:"P4",h:6,t:"Componentes reutilizables: tabla, formulario con validación, modal",dep:["F1"],dod:"Se usan en al menos 2 pantallas."},
+  {id:"F4",ph:"front",who:"P4",h:10,t:"ABM de productos, categorías, proveedores y clientes",dep:["F3"],dod:"Validan antes de enviar y muestran los errores del backend."},
+  {id:"F5",ph:"front",who:"P3",h:8,t:"Pedidos: armar con líneas, confirmar y mostrar falta de stock",dep:["F3","B5"],dod:"El caso de stock insuficiente se ve claro en pantalla."},
+  {id:"F6",ph:"front",who:"P4",h:5,t:"Dashboard con indicadores y un gráfico",dep:["F3","B7"],dod:"Muestra datos reales de la base."},
+  {id:"F7",ph:"front",who:"P1",h:6,t:"Reportes con filtros y exportación a PDF y Excel",dep:["F3","B7"],dod:"Los archivos se descargan y se abren bien."},
+  {id:"I1",ph:"cierre",who:"TODOS",h:24,t:"Integración completa y corrección de errores",dep:["D4","B4","B5","B6","B7","F2","F4","F5","F6","F7"],dod:"Los 3 roles completan su recorrido sin errores con la base recién creada."},
+  {id:"I2",ph:"cierre",who:"P1",h:4,t:"README, diagrama E/R, capturas de Swagger e informe",dep:["I1"],dod:"Alguien de afuera levanta el proyecto solo con el README."},
+  {id:"I3",ph:"cierre",who:"P2",h:3,t:"Guion de la demo y ensayo",dep:["I1"],dod:"Menos de 15 minutos, con el ROLLBACK en vivo."}
+];
+const MILESTONES = [
+  ["2026-10-30","Contrato de API y E/R cerrados"],
+  ["2026-11-03","Base completa, login y CRUD andando"],
+  ["2026-11-06","Funcionalidades terminadas por separado"],
+  ["2026-11-08","Integración completa"],
+  ["2026-11-09","Ensayo y versión congelada"],
+  ["2026-11-10","Entrega"]
+];
+
+let progress = {};            // id -> {estado, who}
+let names = {P1:"",P2:"",P3:"",P4:""};
+let filter = "todas";
+let db = null, canWrite = true;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const stateOf = id => progress[id]?.estado || "pendiente";
+const whoOf = t => progress[t.id]?.who || t.who;
+const label = p => p==="TODOS" ? "Todos" : (names[p] ? `${p} · ${names[p]}` : p);
+
+function renderPeople(){
+  $("#people").innerHTML = PEOPLE.map(p=>{
+    const mine = TASKS.filter(t=>whoOf(t)===p);
+    const total = mine.reduce((a,t)=>a+t.h,0)||1;
+    const done = mine.filter(t=>stateOf(t.id)==="hecha").reduce((a,t)=>a+t.h,0);
+    const prog = mine.filter(t=>stateOf(t.id)==="en_curso").reduce((a,t)=>a+t.h,0);
+    return `<div class="person">
+      <div class="eyebrow">${p} · ${esc(ROLE[p])}</div>
+      <input id="name-${p}" data-p="${p}" placeholder="Escribí tu nombre" value="${esc(names[p])}" ${canWrite?"":"disabled"} aria-label="Nombre de ${p}">
+      <div class="bar" role="img" aria-label="${done} de ${total} horas hechas"><i class="d" style="width:${done/total*100}%"></i><i class="p" style="width:${prog/total*100}%"></i></div>
+      <div class="pmeta"><span>${mine.length} tareas</span><span class="mono">${done} / ${total} h</span></div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll(".person input").forEach(inp=>{
+    inp.addEventListener("change",()=>saveName(inp.dataset.p, inp.value.trim().slice(0,40)));
+  });
+}
+
+function renderRail(){
+  const today = new Date().toISOString().slice(0,10);
+  let nowIdx = MILESTONES.findIndex(([d])=>d>=today);
+  $("#rail").innerHTML = MILESTONES.map(([d,txt],i)=>{
+    const cls = i===nowIdx ? "now" : (d<today ? "past" : "");
+    const [y,m,day] = d.split("-");
+    const mon = m==="10"?"oct":"nov";
+    return `<div class="ms ${cls}"><div class="date">${+day} ${mon}${i===nowIdx?" · próximo":""}</div>${esc(txt)}</div>`;
+  }).join("");
+}
+
+function renderFilters(){
+  const opts = [["todas","Todas"],...PEOPLE.map(p=>[p,label(p)]),["listas","Listas para empezar"],["critico","Camino crítico"]];
+  $("#filters").innerHTML = opts.map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${filter===k}">${esc(l)}</button>`).join("");
+  document.querySelectorAll(".chip").forEach(b=>b.addEventListener("click",()=>{filter=b.dataset.f;renderFilters();renderTasks();}));
+}
+
+function visible(t){
+  if(filter==="todas") return true;
+  if(filter==="critico") return CRIT.has(t.id);
+  if(filter==="listas") return stateOf(t.id)!=="hecha" && t.dep.every(d=>stateOf(d)==="hecha");
+  return whoOf(t)===filter || whoOf(t)==="TODOS";
+}
+
+function renderTasks(){
+  const html = PHASES.map(([ph,title])=>{
+    const list = TASKS.filter(t=>t.ph===ph && visible(t));
+    if(!list.length) return "";
+    const hrs = TASKS.filter(t=>t.ph===ph).reduce((a,t)=>a+t.h,0);
+    return `<div class="phase"><div class="phase-head"><h2>${title}</h2><span class="eyebrow">${hrs} h</span></div>
+      ${list.map(taskRow).join("")}</div>`;
+  }).join("");
+  $("#tasks").innerHTML = html || `<p class="empty">No hay tareas con este filtro.</p>`;
+  document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>saveTask(b.dataset.id,{estado:b.dataset.s})));
+  document.querySelectorAll(".task select").forEach(s=>s.addEventListener("change",()=>saveTask(s.dataset.id,{who:s.value})));
+}
+
+function taskRow(t){
+  const st = stateOf(t.id), w = whoOf(t);
+  const pending = t.dep.filter(d=>stateOf(d)!=="hecha");
+  const deps = t.dep.length
+    ? t.dep.map(d=>`<span class="tag ${stateOf(d)==="hecha"?"ok":"block"}" title="${stateOf(d)==="hecha"?"Terminada":"Sin terminar"}">${d}</span>`).join("")
+    : `<span class="tag ok">sin dependencias</span>`;
+  const whoOpts = [...PEOPLE,"TODOS"].map(p=>`<option value="${p}" ${p===w?"selected":""}>${esc(label(p))}</option>`).join("");
+  const seg = [["pendiente","Pendiente"],["en_curso","En curso"],["hecha","Hecha"]]
+    .map(([s,l])=>`<button data-id="${t.id}" data-s="${s}" aria-pressed="${st===s}" ${canWrite?"":"disabled"}>${l}</button>`).join("");
+  return `<article class="task ${st==="hecha"?"done":""}">
+    <div class="tid">${t.id}${CRIT.has(t.id)?'<span class="crit">Crítica</span>':""}</div>
+    <div class="body">
+      <div class="ttl">${esc(t.t)}</div>
+      <div class="dod"><b>Terminada cuando:</b> ${esc(t.dod)}</div>
+      <div class="meta"><span class="tag">${t.h} h</span><span>Depende de</span>${deps}${pending.length && st!=="hecha"?`<span style="color:var(--amber)">· espera ${pending.length}</span>`:""}</div>
+    </div>
+    <div class="ctrl">
+      <select id="who-${t.id}" data-id="${t.id}" aria-label="Responsable de ${t.id}" ${canWrite?"":"disabled"}>${whoOpts}</select>
+      <div class="seg" role="group" aria-label="Estado de ${t.id}">${seg}</div>
+    </div>
+  </article>`;
+}
+
+function renderAll(){renderPeople();renderFilters();renderTasks();}
+
+function setSync(msg){$("#sync").innerHTML = msg;}
+
+async function saveTask(id, patch){
+  const cur = {estado:stateOf(id), who:whoOf(TASKS.find(t=>t.id===id)), ...patch};
+  if(cur.estado===stateOf(id) && cur.who===whoOf(TASKS.find(t=>t.id===id))) return;
+  progress[id] = cur; renderAll();
+  if(!db) return;
+  try{ await db.doc("progreso/"+id).set(cur); }
+  catch(e){ handleWriteError(e); }
+}
+async function saveName(p, v){
+  if(names[p]===v) return;
+  names[p]=v; renderFilters(); renderTasks();
+  if(!db) return;
+  try{ await db.doc("equipo/nombres").set({...names}); }
+  catch(e){ handleWriteError(e); }
+}
+function handleWriteError(e){
+  if(e && e.code==="invalid_argument"){ canWrite=false; setSync("Tenés acceso de solo lectura: podés ver el tablero pero no cambiarlo."); renderAll(); }
+  else setSync("<b>No se pudo guardar el último cambio.</b> Probá de nuevo en unos segundos.");
+}
+
+renderRail(); renderAll();
+
+(async()=>{
+  try{ db = await window.claude?.use?.("db") ?? null; }catch{ db = null; }
+  if(!db){ setSync("<b>Sin conexión al tablero compartido.</b> Los cambios de esta vista no se guardan."); return; }
+  try{
+    const user = await window.claude.use("user");
+    const can = user ? await user.can("data.write") : null;
+    if(can===false){ canWrite=false; renderAll(); }
+  }catch{}
+  setSync(canWrite ? "Compartido con el grupo · los cambios se guardan solos." : "Tenés acceso de solo lectura.");
+  db.collection("progreso").onSnapshot(snap=>{
+    const next = {};
+    snap.docs.forEach(d=>{ const v=d.data(); if(v) next[d.id]={estado:v.estado,who:v.who}; });
+    progress = next; renderAll();
+  }, ()=>setSync("<b>Se cortó la conexión.</b> Recargá la página."));
+  db.doc("equipo/nombres").onSnapshot(d=>{
+    if(d.exists){ names = {P1:"",P2:"",P3:"",P4:"", ...d.data()}; renderAll(); }
+  });
+})();
+</script>
