@@ -36,6 +36,18 @@ La primera vez, MySQL ejecuta solo todos los `.sql` de `database/` en orden alfa
 | Contraseña | `root` |
 | Base | `distribuidora` |
 
+**Alternativa: MySQL local (sin Docker).** Si ya tenés MySQL instalado, podés crear una instancia dedicada en el mismo puerto y credenciales, y el resto del setup no cambia. Con el `mysqld` ya instalado:
+
+```bash
+# 1. Crear la carpeta de datos (una sola vez):
+mysqld --initialize-insecure --datadir=<carpeta>/data
+# 2. Levantar el servidor (en otra terminal o como servicio):
+mysqld --datadir=<carpeta>/data --port=3307
+# 3. Cargar esquema y usuarios:
+Get-Content database/01_schema.sql | mysql -uroot -p --port=3307 --force
+Get-Content database/02_seed.sql | mysql -uroot -p --port=3307 --force
+```
+
 **Recrear la base desde cero** (después de cambiar un `.sql`, o si se rompió algo):
 
 ```bash

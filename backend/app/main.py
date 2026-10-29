@@ -11,7 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core import database
 from app.core.config import settings
 from app.core.exceptions import ApiError
-from app.routers import salud
+from app.routers import auth, salud
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -31,67 +31,72 @@ async def lifespan(app: FastAPI):
     await database.desconectar()
 
 
-app = FastAPI(
-    title="Distribuidora de bebidas",
-    version="0.1.0",
-    lifespan=lifespan,
-)
+def crear_app() -> FastAPI:
+    """Fábrica de la aplicación: routers + manejo de errores del contrato.
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    Los tests levantan esta misma app (sin conexión real) para verificar
+    el contrato de errores.
+    """
+    app = FastAPI(
+        title="Distribuidora de bebidas",
+        version="0.1.0",
+        lifespan=lifespan,
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.exception_handler(ApiError)
+    async def manejar_api_error(request: Request, error: ApiError):
+        return error.como_json()
+
+    @app.exception_handler(RequestValidationError)
+    async def manejar_validacion(request: Request, error: RequestValidationError):
+        """422 con `details` listaando campo y mensaje, como pide el contrato."""
+        detalles = [
+            {"field": ".".join(str(p) for p in err["loc"][1:]), "message": err["msg"]}
+            for err in error.errors()
+        ]
+        return ApiError(
+            estado_http=422,
+            mensaje="Datos con tipo o formato incorrecto.",
+            detalle=detalles,
+        ).como_json()
+
+    @app.exception_handler(StarletteHTTPException)
+    async def manejar_http_error(request: Request, error: StarletteHTTPException):
+        """404/401/403/etc. de FastAPI se re-envian en la forma del contrato."""
+        return ApiError(
+            estado_http=error.status_code,
+            mensaje=str(error.detail),
+        ).como_json()
+
+    @app.exception_handler(aiomysql.MySQLError)
+    async def manejar_mysql(request: Request, error: aiomysql.MySQLError):
+        """Un error de MySQL fuera del request en curso no expone SQL."""
+        logger.error("Error de MySQL en %s: %s", request.url.path, error)
+        return ApiError(
+            estado_http=503,
+            mensaje="La base de datos no está disponible.",
+        ).como_json()
+
+    @app.exception_handler(Exception)
+    async def manejar_error_no_previsto(request: Request, error: Exception):
+        """500: nunca expone SQL ni stack trace al cliente."""
+        logger.exception("Error no previsto en %s", request.url.path)
+        return ApiError(
+            estado_http=500,
+            mensaje="Error interno del servidor.",
+        ).como_json()
+
+    app.include_router(salud.router, prefix=settings.API_PREFIX)
+    app.include_router(auth.router, prefix=settings.API_PREFIX)
+    return app
 
 
-@app.exception_handler(ApiError)
-async def manejar_api_error(request: Request, error: ApiError):
-    return error.como_json()
-
-
-@app.exception_handler(RequestValidationError)
-async def manejar_validacion(request: Request, error: RequestValidationError):
-    """422 con `details` listaando campo y mensaje, como pide el contrato."""
-    detalles = [
-        {"field": ".".join(str(p) for p in err["loc"][1:]), "message": err["msg"]}
-        for err in error.errors()
-    ]
-    return ApiError(
-        estado_http=422,
-        mensaje="Datos con tipo o formato incorrecto.",
-        detalle=detalles,
-    ).como_json()
-
-
-@app.exception_handler(StarletteHTTPException)
-async def manejar_http_error(request: Request, error: StarletteHTTPException):
-    """404/401/403/etc. de FastAPI se re-envian en la forma del contrato."""
-    return ApiError(
-        estado_http=error.status_code,
-        mensaje=str(error.detail),
-    ).como_json()
-
-
-@app.exception_handler(aiomysql.MySQLError)
-async def manejar_mysql(request: Request, error: aiomysql.MySQLError):
-    """Un error de MySQL fuera del request en curso no expone SQL."""
-    logger.error("Error de MySQL en %s: %s", request.url.path, error)
-    return ApiError(
-        estado_http=503,
-        mensaje="La base de datos no está disponible.",
-    ).como_json()
-
-
-@app.exception_handler(Exception)
-async def manejar_error_no_previsto(request: Request, error: Exception):
-    """500: nunca expone SQL ni stack trace al cliente."""
-    logger.exception("Error no previsto en %s", request.url.path)
-    return ApiError(
-        estado_http=500,
-        mensaje="Error interno del servidor.",
-    ).como_json()
-
-
-app.include_router(salud.router, prefix=settings.API_PREFIX)
+app = crear_app()
