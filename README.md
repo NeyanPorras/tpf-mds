@@ -97,7 +97,21 @@ Abrir http://localhost:5173
 
 ## Usuarios de prueba
 
-Se definen en `database/02_seed.sql` (uno por rol: ADMIN, VENDEDOR y DEPOSITO).
+Se definen en `database/02_seed.sql`. Son solo para desarrollo.
+
+| Rol | Email | Contraseña |
+|---|---|---|
+| ADMIN | `admin@distribuidora.com` | `Admin123!` |
+| VENDEDOR | `ventas@distribuidora.com` | `Venta123!` |
+| DEPOSITO | `deposito@distribuidora.com` | `Deposito123!` |
+
+### Datos de ejemplo
+
+`02_seed.sql` y `04_seed_pedidos.sql` cargan 6 categorías, 6 proveedores, 30 productos, 15 clientes (Centro, Norte y Sur) y 40 pedidos de agosto a octubre de 2026: 29 entregados, 2 confirmados, 6 pendientes y 3 cancelados. Los pedidos se confirman con `sp_confirmar_pedido`, así que el stock y los movimientos son coherentes. Quedan preparados para los reportes:
+
+- 5 productos por debajo del stock mínimo.
+- 14 productos sin ventas en los últimos 30 días (contando desde el 29/10/2026).
+- El pedido 40 está pendiente y **no se puede confirmar** por falta de stock: sirve para mostrar el ROLLBACK en la demo.
 
 ## Integrantes
 
