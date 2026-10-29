@@ -1,0 +1,26 @@
+# MySQL 8 for local development.
+# Start:  docker compose up -d
+# Reset:  docker compose down -v && docker compose up -d
+# On the first start (empty volume) MySQL runs every *.sql file in ./database
+# in alphabetical order. Subfolders such as database/tests are not run.
+services:
+  db:
+    image: mysql:8.0
+    container_name: tpf-mds-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      TZ: America/Argentina/Buenos_Aires
+    command: --default-time-zone=-03:00
+    ports:
+      - "${DB_PORT:-3307}:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  db-data:
