@@ -1,6 +1,6 @@
 """Recibe la petición HTTP y devuelve la respuesta. Sin SQL ni reglas."""
 import aiomysql
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Security
 
 from app.core import seguridad
 from app.core.database import get_conexion
@@ -22,7 +22,7 @@ async def login(
 
 @router.get("/auth/me", response_model=UsuarioSalida)
 async def me(
-    usuario: dict = Depends(seguridad.get_current_user),
+    usuario: dict = Security(seguridad.get_current_user),
 ) -> dict:
     """Devuelve el usuario dueño del token actual."""
     return usuario
