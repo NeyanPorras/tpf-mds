@@ -4,7 +4,7 @@ Un solo repositorio en GitHub. Cada uno programa por su cuenta en una rama, y el
 
 ## 1. Preparar la máquina (una sola vez)
 
-1. Instalar Git, Python 3.12, Node 20 LTS y MySQL 8.
+1. Instalar Git, Python 3.12, Node 20 LTS y Docker Desktop (con WSL2). MySQL no se instala: corre en Docker (ver README).
 2. Clonar el repo:
    ```bash
    git clone https://github.com/<organizacion>/tpf-mds.git
