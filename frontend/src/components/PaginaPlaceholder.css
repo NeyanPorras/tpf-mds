@@ -1,0 +1,26 @@
+.placeholder {
+  max-width: 560px;
+}
+
+.placeholder p {
+  margin: 0 0 0.5rem;
+  color: #4b5468;
+}
+
+.placeholder .tarea {
+  font-size: 0.85rem;
+  color: #7a8299;
+}
+
+.prueba401 {
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: #4b5468;
+}
+
+.prueba401 p {
+  margin: 0;
+}

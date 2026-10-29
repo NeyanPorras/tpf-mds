@@ -1,0 +1,64 @@
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+.barra {
+  display: flex;
+  flex-direction: column;
+  background-color: #1c2333;
+  color: #e8ebf1;
+  padding: 1rem 0.75rem;
+}
+
+.marca h1 {
+  margin: 0 0 1.25rem;
+  padding-left: 0.5rem;
+  font-size: 1.05rem;
+}
+
+.barra nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.barra nav a {
+  padding: 0.55rem 0.75rem;
+  border-radius: 6px;
+  color: #e8ebf1;
+  text-decoration: none;
+}
+
+.barra nav a:hover {
+  background-color: #2a3350;
+}
+
+.barra nav a.activo {
+  background-color: #2249c8;
+}
+
+.pie {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: #aab3c5;
+}
+
+.pie button {
+  background-color: transparent;
+  border: 1px solid #465377;
+  color: #e8ebf1;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.pie button:hover:not(:disabled) {
+  background-color: #2a3350;
+}
+
+.contenido {
+  padding: 1.5rem 2rem;
+}
