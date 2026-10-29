@@ -116,4 +116,16 @@ erDiagram
 5. `COMMIT`.
 6. Un `DECLARE EXIT HANDLER FOR SQLEXCEPTION` hace `ROLLBACK` y relanza el error ante cualquier falla inesperada.
 
-El backend traduce el `SIGNAL` de falta de stock a un `409 STOCK_INSUFICIENTE` (ver `contrato-api.md`).
+Implementado en `database/03_procedures.sql` y probado en `database/tests/03_sp_confirmar_pedido.sql`. Si confirma, devuelve una fila `(id, estado, total)`. Si falla, lanza `SQLSTATE 45000` con un `MYSQL_ERRNO` que el backend (B5) traduce así:
+
+| `MYSQL_ERRNO` | Caso | Respuesta de la API |
+|---|---|---|
+| 50001 | El pedido no existe | `404 NOT_FOUND` |
+| 50002 | El pedido no está `PENDIENTE` | `409 ESTADO_INVALIDO` |
+| 50003 | El pedido no tiene líneas | `400 BAD_REQUEST` |
+| 50004 | Algún producto no tiene stock suficiente | `409 STOCK_INSUFICIENTE` |
+| 50005 | El usuario no existe o está inactivo | `400 BAD_REQUEST` |
+
+El mensaje del error ya viene listo para mostrar (por ejemplo, `No hay stock suficiente de Coca-Cola 2.25L x6`). Para armar los `details` del 409 (`producto_id`, `solicitado`, `disponible`), el backend los consulta después del error, porque el `ROLLBACK` no deja devolver datos.
+
+**Importante para el backend:** el procedimiento abre y cierra su propia transacción. Hay que llamarlo con la conexión en autocommit y sin una transacción abierta, porque `START TRANSACTION` confirma en silencio cualquier transacción anterior.
