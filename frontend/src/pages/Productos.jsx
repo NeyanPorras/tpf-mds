@@ -1,4 +1,4 @@
-import PaginaPlaceholder from '../components/PaginaPlaceholder.tsx'
+import PaginaPlaceholder from '../components/PaginaPlaceholder.jsx'
 
 export default function Productos() {
   return (

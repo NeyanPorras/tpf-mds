@@ -1,13 +1,8 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { getUsuario, limpiarSesion } from '../api/sesion.ts'
+import { getUsuario, limpiarSesion } from '../api/sesion.js'
 import './Layout.css'
 
-interface Link {
-  to: string
-  texto: string
-}
-
-const LINKS: Link[] = [
+const LINKS = [
   { to: '/', texto: 'Inicio' },
   { to: '/productos', texto: 'Productos' },
   { to: '/clientes', texto: 'Clientes' },
@@ -19,7 +14,7 @@ export default function Layout() {
   const navigate = useNavigate()
   const usuario = getUsuario()
 
-  function salir(): void {
+  function salir() {
     limpiarSesion()
     navigate('/login')
   }

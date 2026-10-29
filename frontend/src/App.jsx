@@ -1,11 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Layout from './layout/Layout.tsx'
-import Login from './pages/Login.tsx'
-import Inicio from './pages/Inicio.tsx'
-import Productos from './pages/Productos.tsx'
-import Clientes from './pages/Clientes.tsx'
-import Pedidos from './pages/Pedidos.tsx'
-import Reportes from './pages/Reportes.tsx'
+import Layout from './layout/Layout.jsx'
+import Login from './pages/Login.jsx'
+import Inicio from './pages/Inicio.jsx'
+import Productos from './pages/Productos.jsx'
+import Clientes from './pages/Clientes.jsx'
+import Pedidos from './pages/Pedidos.jsx'
+import Reportes from './pages/Reportes.jsx'
 
 export default function App() {
   return (

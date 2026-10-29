@@ -1,17 +1,16 @@
 import { useState } from 'react'
-import { esError401, http } from '../api/cliente.ts'
-import PaginaPlaceholder from '../components/PaginaPlaceholder.tsx'
-import type { Usuario } from '../api/tipos.ts'
+import { esError401, http } from '../api/cliente.js'
+import PaginaPlaceholder from '../components/PaginaPlaceholder.jsx'
 
 export default function Inicio() {
-  const [mensaje, setMensaje] = useState<string | null>(null)
+  const [mensaje, setMensaje] = useState(null)
   const [cargando, setCargando] = useState(false)
 
-  async function probarRedirect401(): Promise<void> {
+  async function probarRedirect401() {
     setMensaje(null)
     setCargando(true)
     try {
-      await http.get<Usuario>('/auth/me')
+      await http.get('/auth/me')
       setMensaje('La respuesta fue OK: hay una sesión válida.')
     } catch (error) {
       if (esError401(error)) {

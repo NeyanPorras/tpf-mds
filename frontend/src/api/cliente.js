@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios'
-import { getToken, limpiarSesion } from './sesion.ts'
+import { getToken, limpiarSesion } from './sesion.js'
 
 export const http = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
@@ -24,16 +24,13 @@ http.interceptors.response.use(
   },
 )
 
-export function esError401(error: unknown): boolean {
+export function esError401(error) {
   return error instanceof AxiosError && error.response?.status === 401
 }
 
-export function mensajeDeError(error: unknown): string {
+export function mensajeDeError(error) {
   if (error instanceof AxiosError) {
-    return (
-      (error.response?.data as { error?: { message?: string } } | undefined)
-        ?.error?.message ?? 'Error inesperado. Intentá de nuevo.'
-    )
+    return error.response?.data?.error?.message ?? 'Error inesperado. Intentá de nuevo.'
   }
   return 'Error inesperado. Intentá de nuevo.'
 }

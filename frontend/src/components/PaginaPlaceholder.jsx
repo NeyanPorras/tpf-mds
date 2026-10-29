@@ -1,12 +1,6 @@
 import './PaginaPlaceholder.css'
 
-interface Props {
-  titulo: string
-  descripcion: string
-  tarea?: string
-}
-
-export default function PaginaPlaceholder({ titulo, descripcion, tarea }: Props) {
+export default function PaginaPlaceholder({ titulo, descripcion, tarea }) {
   return (
     <section className="placeholder">
       <h2>{titulo}</h2>
