@@ -11,7 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core import database
 from app.core.config import settings
 from app.core.exceptions import ApiError
-from app.routers import auth, salud
+from app.routers import auth, categorias, productos, proveedores, salud
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -96,6 +96,9 @@ def crear_app() -> FastAPI:
 
     app.include_router(salud.router, prefix=settings.API_PREFIX)
     app.include_router(auth.router, prefix=settings.API_PREFIX)
+    app.include_router(categorias.router, prefix=settings.API_PREFIX)
+    app.include_router(proveedores.router, prefix=settings.API_PREFIX)
+    app.include_router(productos.router, prefix=settings.API_PREFIX)
     return app
 
 
