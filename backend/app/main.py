@@ -11,7 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core import database
 from app.core.config import settings
 from app.core.exceptions import ApiError
-from app.routers import salud
+from app.routers import auth, salud
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -95,3 +95,4 @@ async def manejar_error_no_previsto(request: Request, error: Exception):
 
 
 app.include_router(salud.router, prefix=settings.API_PREFIX)
+app.include_router(auth.router, prefix=settings.API_PREFIX)
