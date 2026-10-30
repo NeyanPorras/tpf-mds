@@ -1,24 +1,22 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { http, mensajeDeError } from '../api/cliente.ts'
-import { guardarSesion } from '../api/sesion.ts'
-import type { RespuestaLogin } from '../api/tipos.ts'
+import { http, mensajeDeError } from '../api/cliente.js'
+import { guardarSesion } from '../api/sesion.js'
 import './Login.css'
 
 export default function Login() {
   const navigate = useNavigate()
   const [cargando, setCargando] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState(null)
 
-  async function enviar(evento: FormEvent<HTMLFormElement>): Promise<void> {
+  async function enviar(evento) {
     evento.preventDefault()
     setError(null)
     setCargando(true)
 
     const datos = new FormData(evento.currentTarget)
     try {
-      const { data } = await http.post<RespuestaLogin>('/auth/login', {
+      const { data } = await http.post('/auth/login', {
         email: String(datos.get('email') ?? ''),
         password: String(datos.get('password') ?? ''),
       })
