@@ -59,6 +59,16 @@
   background-color: #2a3350;
 }
 
+.rol {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background-color: #2a3350;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
 .contenido {
   padding: 1.5rem 2rem;
 }
