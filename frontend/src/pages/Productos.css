@@ -1,0 +1,15 @@
+.productos-cabecera h2 {
+  margin-bottom: 0;
+}
+
+.productos-cabecera p {
+  margin: 0.25rem 0 1rem;
+  color: #4b5468;
+  font-size: 0.9rem;
+  max-width: 640px;
+}
+
+.stock-bajo {
+  color: #b3261e;
+  font-weight: 600;
+}

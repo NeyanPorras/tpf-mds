@@ -6,6 +6,7 @@ import Productos from './pages/Productos.jsx'
 import Clientes from './pages/Clientes.jsx'
 import Pedidos from './pages/Pedidos.jsx'
 import Reportes from './pages/Reportes.jsx'
+import Demo from './pages/Demo.jsx'
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/clientes" element={<Clientes />} />
           <Route path="/pedidos" element={<Pedidos />} />
           <Route path="/reportes" element={<Reportes />} />
+          <Route path="/demo" element={<Demo />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -1,0 +1,27 @@
+.formulario {
+  display: grid;
+  gap: 1rem;
+}
+
+.formulario-campo {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.formulario-campo span {
+  color: #39415a;
+}
+
+.formulario-error {
+  margin: 0;
+  color: #b3261e;
+  font-size: 0.82rem;
+}
+
+.formulario-error-general {
+  padding: 0.5rem 0.75rem;
+  background-color: #fdecea;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}

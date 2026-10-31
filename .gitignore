@@ -1,7 +1,6 @@
 # Python
 __pycache__/
 *.pyc
-.pytest_cache/
 .venv/
 venv/
 
@@ -19,5 +18,11 @@ dist/
 .DS_Store
 Thumbs.db
 
+# Playwright artifacts
+test-results/
+playwright-report/
+
 # Local AI tooling
 .atl/
+.agents/
+skills-lock.json
