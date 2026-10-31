@@ -49,7 +49,8 @@ DEPOSITO = {
     "rol": "DEPOSITO",
 }
 
-# Producto del seed con bastante stock: aguanta las corridas de prueba.
+# Producto del seed con stock suficiente para las corridas (id=2):
+# su nombre real en el seed del equipo es "Coca-Cola Zero 2.25L x6".
 PRODUCTO_FIJO = 2
 
 
