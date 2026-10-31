@@ -69,6 +69,17 @@ Get-Content database/tests/01_schema_checks.sql | docker exec -i tpf-mds-db mysq
 
 En Git Bash también se puede usar `<` en lugar de `Get-Content … |`. En PowerShell, `<` no funciona.
 
+**Pruebas y consultas de la base:**
+
+| Script | Qué hace |
+|---|---|
+| `database/tests/01_schema_checks.sql` | Restricciones del esquema (con `--force`: 8 errores esperados) |
+| `database/tests/03_sp_confirmar_pedido.sql` | COMMIT y ROLLBACK del procedimiento (con `--force`: 5 errores esperados) |
+| `database/tests/04_consultas_reportes.sql` | Las consultas de reportes contra datos con resultados conocidos |
+| `database/consultas/reportes.sql` | Las consultas de reportes (INNER JOIN, subconsulta, GROUP BY) sobre los datos de prueba |
+
+Agregar `--table` al comando de `mysql` muestra los resultados en forma de tabla.
+
 Para conectarse con MySQL Workbench o DBeaver, usar los datos de la tabla de arriba.
 
 ### 2. Backend
