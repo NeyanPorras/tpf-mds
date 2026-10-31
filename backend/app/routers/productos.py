@@ -4,13 +4,18 @@ from fastapi import APIRouter, Depends, Query
 
 from app.core import seguridad
 from app.core.database import get_conexion
+from app.schemas.movimiento import (
+    IngresoEntrada,
+    IngresoSalida,
+    PaginaMovimientos,
+)
 from app.schemas.producto import (
     PaginaProductos,
     ProductoCrear,
     ProductoEditar,
     ProductoSalida,
 )
-from app.services import productos
+from app.services import movimientos, productos
 
 router = APIRouter(tags=["productos"])
 
@@ -76,3 +81,38 @@ async def eliminar(
 ) -> None:
     """Borra un producto (409 si está en pedidos): solo ADMIN."""
     return await productos.ProductosService(conexion).eliminar(id_producto)
+
+
+@router.post(
+    "/productos/{id_producto}/ingresos",
+    response_model=IngresoSalida,
+    status_code=201,
+)
+async def registrar_ingreso(
+    id_producto: int,
+    datos: IngresoEntrada,
+    conexion: aiomysql.Connection = Depends(get_conexion),
+    usuario: dict = Depends(seguridad.require_role("ADMIN", "DEPOSITO")),
+) -> IngresoSalida:
+    """Ingresa mercadería: movimiento ENTRADA + suma de stock, atómicos."""
+    resultado = await movimientos.MovimientosService(conexion).registrar_entrada(
+        id_producto, datos, id_usuario=int(usuario["id"])
+    )
+    return IngresoSalida(**resultado)
+
+
+@router.get(
+    "/productos/{id_producto}/movimientos",
+    response_model=PaginaMovimientos,
+)
+async def listar_movimientos(
+    id_producto: int,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    conexion: aiomysql.Connection = Depends(get_conexion),
+    usuario: dict = Depends(seguridad.get_current_user),
+) -> PaginaMovimientos:
+    """Historial de movimientos del producto: todos los roles autenticados."""
+    return await movimientos.MovimientosService(conexion).listar(
+        id_producto, page=page, size=size
+    )
