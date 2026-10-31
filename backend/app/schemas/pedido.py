@@ -1,6 +1,5 @@
 """Validación del servidor para pedidos (crear y responder)."""
 from datetime import datetime
-from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 

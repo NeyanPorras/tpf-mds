@@ -1,15 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { getUsuario, limpiarSesion } from '../api/sesion.js'
+import { seccionesDeMenu } from '../api/permisos.js'
 import './Layout.css'
-
-const LINKS = [
-  { to: '/', texto: 'Inicio' },
-  { to: '/productos', texto: 'Productos' },
-  { to: '/clientes', texto: 'Clientes' },
-  { to: '/pedidos', texto: 'Pedidos' },
-  { to: '/reportes', texto: 'Reportes' },
-  { to: '/demo', texto: 'Componentes' },
-]
 
 export default function Layout() {
   const navigate = useNavigate()
@@ -27,21 +19,24 @@ export default function Layout() {
           <h1>Distribuidora</h1>
         </div>
         <nav>
-          {LINKS.map((link) => (
+          {/* Cada rol ve solo su menú (tabla "Permisos por rol" del contrato). */}
+          {(usuario ? seccionesDeMenu(usuario.rol) : []).map((seccion) => (
             <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.to === '/'}
+              key={seccion.to}
+              to={seccion.to}
+              end={seccion.to === '/'}
               className={({ isActive }) => (isActive ? 'activo' : '')}
             >
-              {link.texto}
+              {seccion.texto}
             </NavLink>
           ))}
         </nav>
         <div className="pie">
           {usuario ? (
             <>
-              <span>{usuario.nombre}</span>
+              <span>
+                {usuario.nombre} <span className="rol">{usuario.rol}</span>
+              </span>
               <button type="button" onClick={salir}>
                 Salir
               </button>
