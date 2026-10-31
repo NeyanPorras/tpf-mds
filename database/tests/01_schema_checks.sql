@@ -1,7 +1,7 @@
 -- =============================================================
 -- Pruebas de restricciones del esquema (tarea D1)
--- Correr sobre una base recien creada con 01_schema.sql:
---   mysql -u root -p --force distribuidora < database/tests/01_schema_checks.sql
+-- Correr sobre la base creada (sirve vacia o con los datos de prueba):
+--   Get-Content database/tests/01_schema_checks.sql | docker exec -i tpf-mds-db mysql -uroot -proot --force distribuidora
 -- --force hace que siga despues de cada error: cada bloque
 -- "DEBE FALLAR" tiene que mostrar un ERROR en la salida.
 -- Todo se deshace con ROLLBACK al final.
@@ -11,17 +11,17 @@ START TRANSACTION;
 
 -- Datos minimos para las pruebas
 INSERT INTO usuarios (nombre, email, password_hash, rol_id)
-  VALUES ('Prueba', 'prueba@test.com', 'x', 1);
+  VALUES ('Prueba', 'd1test@test.com', 'x', 1);
 SET @u = LAST_INSERT_ID();
-INSERT INTO categorias (nombre) VALUES ('Gaseosas');
+INSERT INTO categorias (nombre) VALUES ('D1TEST Gaseosas');
 SET @cat = LAST_INSERT_ID();
-INSERT INTO proveedores (razon_social, cuit) VALUES ('Prov SA', '30-71234567-8');
+INSERT INTO proveedores (razon_social, cuit) VALUES ('D1TEST Prov SA', '30-77777777-1');
 SET @prov = LAST_INSERT_ID();
 INSERT INTO productos (nombre, presentacion, precio, stock, stock_minimo, categoria_id, proveedor_id)
-  VALUES ('Coca-Cola', '2.25L x6', 12500, 10, 2, @cat, @prov);
+  VALUES ('D1TEST Cola', '2.25L x6', 12500, 10, 2, @cat, @prov);
 SET @prod = LAST_INSERT_ID();
 INSERT INTO clientes (razon_social, cuit, direccion, zona)
-  VALUES ('Almacen Don Pepe', '20-28765432-1', 'San Martin 1234', 'Centro');
+  VALUES ('D1TEST Almacen', '20-77777777-1', 'San Martin 1234', 'Centro');
 SET @cli = LAST_INSERT_ID();
 INSERT INTO pedidos (cliente_id, usuario_id) VALUES (@cli, @u);
 SET @ped = LAST_INSERT_ID();
@@ -40,7 +40,7 @@ INSERT INTO clientes (razon_social, cuit, direccion, zona)
 
 SELECT '--- 4. DEBE FALLAR: CUIT repetido (uq_clientes_cuit)' AS prueba;
 INSERT INTO clientes (razon_social, cuit, direccion, zona)
-  VALUES ('Duplicado', '20-28765432-1', 'X 1', 'Sur');
+  VALUES ('Duplicado', '20-77777777-1', 'X 1', 'Sur');
 
 SELECT '--- 5. DEBE FALLAR: cantidad cero (ck_detalle_cantidad)' AS prueba;
 UPDATE detalle_pedido SET cantidad = 0 WHERE pedido_id = @ped;
