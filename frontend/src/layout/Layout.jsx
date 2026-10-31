@@ -8,6 +8,7 @@ const LINKS = [
   { to: '/clientes', texto: 'Clientes' },
   { to: '/pedidos', texto: 'Pedidos' },
   { to: '/reportes', texto: 'Reportes' },
+  { to: '/demo', texto: 'Componentes' },
 ]
 
 export default function Layout() {

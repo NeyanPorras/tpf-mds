@@ -54,3 +54,13 @@ input {
   border-radius: 6px;
   font-size: 0.95rem;
 }
+
+.aviso-error {
+  max-width: 640px;
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  background-color: #fdecea;
+  color: #b3261e;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}

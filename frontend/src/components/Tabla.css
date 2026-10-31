@@ -1,0 +1,50 @@
+.tabla-marco {
+  max-width: 900px;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(20, 28, 45, 0.08);
+}
+
+.tabla th {
+  text-align: left;
+  background-color: #1c2333;
+  color: #e8ebf1;
+  font-size: 0.85rem;
+  padding: 0.6rem 0.9rem;
+}
+
+.tabla td {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid #eceef3;
+  font-size: 0.92rem;
+}
+
+.tabla tbody tr:hover {
+  background-color: #f7f9fd;
+}
+
+.tabla-leyenda {
+  color: #68738a;
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+
+.tabla-pie {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #4b5468;
+}
+
+.tabla-pie button {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+}
