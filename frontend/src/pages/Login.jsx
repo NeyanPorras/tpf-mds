@@ -1,13 +1,18 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { http, mensajeDeError } from '../api/cliente.js'
-import { guardarSesion } from '../api/sesion.js'
+import { getUsuario, guardarSesion } from '../api/sesion.js'
 import './Login.css'
 
 export default function Login() {
   const navigate = useNavigate()
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState(null)
+
+  // Con sesión activa el login no agenda nada: directo al inicio.
+  if (getUsuario() !== null) {
+    return <Navigate to="/" replace />
+  }
 
   async function enviar(evento) {
     evento.preventDefault()
@@ -46,8 +51,8 @@ export default function Login() {
           {cargando ? 'Ingresando…' : 'Ingresar'}
         </button>
         <p className="nota">
-          El login real se termina en la tarea F2; mientras, se usa la API si ya
-          está levantada.
+          El menú y las rutas se adaptan al rol: Productos y Pedidos para
+          todos, Clientes solo para ventas, Usuarios solo para administración.
         </p>
       </form>
     </main>
