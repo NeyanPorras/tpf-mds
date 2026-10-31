@@ -1,6 +1,6 @@
 """Validación del servidor para Cliente (entrada y salida)."""
-from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Any, Literal
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 # Formato del CUIT: XIX-XXXXXXXX-I (lo valida también la base).
 CUIT = r"^\d{2}-\d{8}-\d$"
@@ -20,13 +20,25 @@ class ClienteCrear(BaseModel):
 
 
 class ClienteEditar(BaseModel):
-    """Body de PUT /clientes/{id}: mismos campos, todos opcionales."""
+    """Body de PUT /clientes/{id}: mismos campos, todos opcionales.
+
+    Omitir un campo significa "no cambiarlo". Mandarlo en `null` significa
+    "vaciarlo": solo vale para `telefono`, que es opcional en la base.
+    """
 
     razon_social: str | None = Field(default=None, min_length=2, max_length=120)
     cuit: str | None = Field(default=None, pattern=CUIT)
     direccion: str | None = Field(default=None, min_length=2, max_length=150)
     zona: Zona | None = None
     telefono: str | None = Field(default=None, max_length=30)
+
+    @field_validator("razon_social", "cuit", "direccion", "zona", mode="before")
+    @classmethod
+    def rechazar_null(cls, valor: Any, info: ValidationInfo) -> Any:
+        """422 si mandan null en un campo que la base no permite vaciar."""
+        if valor is None:
+            raise ValueError(f"'{info.field_name}' no admite null: omití el campo.")
+        return valor
 
 
 class ClienteSalida(BaseModel):

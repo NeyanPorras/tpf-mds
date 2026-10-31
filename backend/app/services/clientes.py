@@ -46,6 +46,8 @@ class ClientesService:
 
     async def editar(self, id_cliente: int, datos: ClienteEditar) -> dict[str, Any]:
         actual = await self.obtener(id_cliente)
+        # `model_fields_set` distingue campo ausente (no tocar) de null (vaciar).
+        limpiar_telefono = "telefono" in datos.model_fields_set
         nuevo = {
             "razon_social": (
                 datos.razon_social
@@ -58,7 +60,7 @@ class ClientesService:
             ),
             "zona": datos.zona if datos.zona is not None else actual["zona"],
             "telefono": (
-                datos.telefono if datos.telefono is not None else actual["telefono"]
+                datos.telefono if limpiar_telefono else actual["telefono"]
             ),
         }
         if nuevo["cuit"] != actual["cuit"]:
