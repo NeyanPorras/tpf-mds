@@ -9,11 +9,11 @@ from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from app.core import database, seguridad
 from app.main import crear_app
-from app.schemas.auth import LoginEntrada
 
 USUARIO_ACTIVO = {
     "id": 1,
