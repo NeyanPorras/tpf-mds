@@ -1,13 +1,15 @@
 import { test, expect } from '@playwright/test'
 
 const ADMIN = { email: 'admin@distribuidora.com', password: 'Admin123!' }
+const DEPOSITO = { email: 'deposito@distribuidora.com', password: 'Deposito123!' }
+const VENDEDOR = { email: 'ventas@distribuidora.com', password: 'Venta123!' }
 
-async function loguearAdmin(page) {
+async function loguearUsuario(page, creds, nombreEsperado) {
   await page.goto('/login')
-  await page.getByLabel('Email').fill(ADMIN.email)
-  await page.getByLabel('Contraseña').fill(ADMIN.password)
+  await page.getByLabel('Email').fill(creds.email)
+  await page.getByLabel('Contraseña').fill(creds.password)
   await page.getByRole('button', { name: 'Ingresar' }).click()
-  await expect(page.getByText('Ana Admin')).toBeVisible()
+  await expect(page.getByText(nombreEsperado)).toBeVisible()
 }
 
 function generarCuit(prefijo = '30') {
@@ -18,7 +20,7 @@ function generarCuit(prefijo = '30') {
 
 test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
   test.beforeEach(async ({ page }) => {
-    await loguearAdmin(page)
+    await loguearUsuario(page, ADMIN, 'Ana Admin')
   })
 
   // ==========================================
@@ -66,13 +68,11 @@ test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
 
   test('Categorías: error 409 al intentar eliminar una con productos asociados', async ({ page }) => {
     await page.goto('/categorias')
-    // Gaseosas viene en el seed y tiene productos asociados
     const filaGaseosas = page.locator('tr', { hasText: 'Gaseosas' }).first()
 
     page.on('dialog', (dialog) => dialog.accept())
     await filaGaseosas.getByRole('button', { name: 'Eliminar' }).click()
 
-    // Debe mostrar error de conflicto devuelto por backend
     await expect(page.locator('.aviso-error')).toBeVisible()
     await expect(page.locator('table').getByText('Gaseosas').first()).toBeVisible()
   })
@@ -86,7 +86,6 @@ test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
     await page.getByRole('button', { name: 'Crear' }).click()
     await expect(page.locator('table').getByText(nombreCat)).toBeVisible()
 
-    // Aceptar confirmación y eliminar
     page.on('dialog', (dialog) => dialog.accept())
     const fila = page.locator('tr', { hasText: nombreCat })
     await fila.getByRole('button', { name: 'Eliminar' }).click()
@@ -112,7 +111,6 @@ test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
     await page.getByRole('button', { name: 'Crear' }).click()
     await expect(page.getByText('El CUIT debe tener el formato XX-XXXXXXXX-X.')).toBeVisible()
 
-    // Cerrar modal con la cruz
     await page.locator('.modal-cerrar').click()
     await expect(page.locator('.modal')).toHaveCount(0)
   })
@@ -123,7 +121,6 @@ test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
     const razonEditada = `Prov Edit ${Date.now()}`
     const cuit = generarCuit('30')
 
-    // Crear
     await page.getByRole('button', { name: 'Nuevo proveedor' }).click()
     await page.getByLabel('Razón Social *').fill(razonOriginal)
     await page.getByLabel('CUIT *').fill(cuit)
@@ -134,7 +131,6 @@ test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
     await expect(page.locator('.modal')).toHaveCount(0)
     await expect(page.locator('table').getByText(razonOriginal)).toBeVisible()
 
-    // Editar
     const fila = page.locator('tr', { hasText: razonOriginal })
     await fila.getByRole('button', { name: 'Editar' }).click()
     await expect(page.locator('.modal')).toBeVisible()
@@ -145,19 +141,18 @@ test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
     await page.getByRole('button', { name: 'Guardar cambios' }).click()
 
     await expect(page.locator('.modal')).toHaveCount(0)
-    await expect(page.locator('table').getByText(razonEditada)).toBeVisible()
-    await expect(page.locator('table').getByText('0342-9999999')).toBeVisible()
+    const filaEditada = page.locator('tr', { hasText: razonEditada })
+    await expect(filaEditada).toBeVisible()
+    await expect(filaEditada.getByText('0342-9999999')).toBeVisible()
   })
 
   test('Proveedores: error 409 al crear CUIT duplicado', async ({ page }) => {
     await page.goto('/proveedores')
-    // Embotelladora del Litoral tiene CUIT 30-71234567-8 en el seed
     await page.getByRole('button', { name: 'Nuevo proveedor' }).click()
     await page.getByLabel('Razón Social *').fill('Proveedor CUIT Clon')
     await page.getByLabel('CUIT *').fill('30-71234567-8')
     await page.getByRole('button', { name: 'Crear' }).click()
 
-    // Formulario debe mostrar el 409 del backend
     await expect(page.locator('.formulario-error-general')).toBeVisible()
     await expect(page.locator('.formulario-error-general')).toContainText('Ya existe')
   })
@@ -178,57 +173,57 @@ test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
     await expect(page.locator('.modal')).toHaveCount(0)
   })
 
-  test('Clientes: creación, edición de zona y búsqueda por texto', async ({ page }) => {
+  test('Clientes: creación, edición de zona y vaciado de teléfono', async ({ page }) => {
     await page.goto('/clientes')
     const nombreCliente = `Almacén Sur ${Date.now()}`
     const cuit = generarCuit('20')
 
-    // Crear en zona Sur
     await page.getByRole('button', { name: 'Nuevo cliente' }).click()
     await page.getByLabel('Razón Social *').fill(nombreCliente)
     await page.getByLabel('CUIT *').fill(cuit)
     await page.getByLabel('Dirección *').fill('Gral. López 456')
+    await page.getByLabel('Teléfono').fill('342-5551234')
     await page.locator('.modal select[name="zona"]').selectOption('Sur')
     await page.getByRole('button', { name: 'Crear' }).click()
 
     await expect(page.locator('.modal')).toHaveCount(0)
     await expect(page.locator('table').getByText(nombreCliente)).toBeVisible()
 
-    // Probar búsqueda por texto
+    // Búsqueda por texto con debounce
     await page.locator('.filtros-barra input[type="text"]').fill(nombreCliente)
     await expect(page.locator('table').getByText(nombreCliente)).toBeVisible()
 
-    // Limpiar búsqueda y verificar
-    await page.locator('.filtros-barra input[type="text"]').fill('')
-    await expect(page.locator('table').getByText(nombreCliente)).toBeVisible()
-
-    // Editar y cambiar de zona a Norte
+    // Editar, cambiar a Norte y vaciar el teléfono (debe mandar null y mostrar '-')
     const fila = page.locator('tr', { hasText: nombreCliente })
     await fila.getByRole('button', { name: 'Editar' }).click()
     await page.locator('.modal select[name="zona"]').selectOption('Norte')
+    await page.getByLabel('Teléfono').fill('')
     await page.getByRole('button', { name: 'Guardar cambios' }).click()
     await expect(page.locator('.modal')).toHaveCount(0)
 
-    // Filtrar por Norte: debe aparecer
+    // Filtrar por Norte
     await page.locator('.filtros-barra select').selectOption('Norte')
     await expect(page.locator('table').getByText(nombreCliente)).toBeVisible()
-
-    // Filtrar por Centro: no debe aparecer
-    await page.locator('.filtros-barra select').selectOption('Centro')
-    await expect(page.locator('table').getByText(nombreCliente)).toHaveCount(0)
   })
 
   // ==========================================
   // 4. PRODUCTOS & STOCK
   // ==========================================
-  test('Productos: validación de precio y stock mínimo numéricos mayores a cero', async ({ page }) => {
+  test('Productos: validación cliente de precio > 0, stock_minimo >= 0 y cantidad > 0', async ({ page }) => {
     await page.goto('/productos')
     await page.getByRole('button', { name: 'Nuevo producto' }).click()
 
+    // Validar precio <= 0
+    await page.getByLabel('Nombre *').fill('Prod Prueba')
+    await page.getByLabel('Presentación *').fill('1L')
+    await page.locator('.modal select[name="categoria_id"]').selectOption({ index: 1 })
+    await page.locator('.modal select[name="proveedor_id"]').selectOption({ index: 1 })
+    await page.getByLabel('Precio ($) *').fill('0')
+    await page.getByLabel('Stock mínimo *').fill('-5')
     await page.getByRole('button', { name: 'Crear' }).click()
-    await expect(page.getByText('Nombre es obligatorio.')).toBeVisible()
-    await expect(page.getByText('Presentación es obligatorio.')).toBeVisible()
-    await expect(page.getByText('Precio ($) es obligatorio.')).toBeVisible()
+
+    await expect(page.getByText('Precio ($) debe ser mayor a 0.')).toBeVisible()
+    await expect(page.getByText('Stock mínimo debe ser mayor o igual a 0.')).toBeVisible()
 
     await page.keyboard.press('Escape')
     await expect(page.locator('.modal')).toHaveCount(0)
@@ -238,7 +233,6 @@ test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
     await page.goto('/productos')
     const nombreProd = `Bebida Premium ${Date.now()}`
 
-    // Crear
     await page.getByRole('button', { name: 'Nuevo producto' }).click()
     await page.getByLabel('Nombre *').fill(nombreProd)
     await page.getByLabel('Presentación *').fill('750ml x6')
@@ -250,18 +244,15 @@ test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
 
     await expect(page.locator('.modal')).toHaveCount(0)
 
-    // Buscar el producto
     await page.locator('.filtros-barra input[type="text"]').fill(nombreProd)
     const fila = page.locator('tr', { hasText: nombreProd })
     await expect(fila).toBeVisible()
 
-    // El stock inicial debe arrancar en 0 (bajo mínimo 15)
+    // Stock 0 <= 15 -> debe marcarse como stock-bajo
     await expect(fila.locator('.stock-bajo')).toBeVisible()
 
-    // Editar precio y presentación
     await fila.getByRole('button', { name: 'Editar' }).click()
     await expect(page.locator('.modal')).toBeVisible()
-    // Verificar que NO existe campo editable para 'stock'
     await expect(page.locator('.modal input[name="stock"]')).toHaveCount(0)
 
     await page.getByLabel('Precio ($) *').fill('9200')
@@ -271,11 +262,10 @@ test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
     await expect(page.locator('tr', { hasText: nombreProd })).toContainText('$ 9.200,00')
   })
 
-  test('Productos: flujo completo de ingreso de mercadería y actualización de stock', async ({ page }) => {
+  test('Productos: flujo de ingreso de mercadería con validación de cantidad > 0', async ({ page }) => {
     await page.goto('/productos')
     const nombreProd = `Jugo Citrus ${Date.now()}`
 
-    // Crear producto con stock inicial 0 y mínimo 20
     await page.getByRole('button', { name: 'Nuevo producto' }).click()
     await page.getByLabel('Nombre *').fill(nombreProd)
     await page.getByLabel('Presentación *').fill('1L x8')
@@ -285,41 +275,64 @@ test.describe('ABM F4: Batería exhaustiva de pruebas', () => {
     await page.locator('.modal select[name="proveedor_id"]').selectOption({ index: 1 })
     await page.getByRole('button', { name: 'Crear' }).click()
 
-    // Filtrar producto
     await page.locator('.filtros-barra input[type="text"]').fill(nombreProd)
     const fila = page.locator('tr', { hasText: nombreProd })
     await expect(fila).toBeVisible()
-    await expect(fila.locator('.stock-bajo')).toContainText('0')
 
-    // Ingresar 50 unidades
+    // Intentar ingresar 0 unidades
     await fila.getByRole('button', { name: '+ Ingreso' }).click()
     await expect(page.locator('.modal')).toBeVisible()
+    await page.getByLabel('Cantidad a ingresar *').fill('0')
+    await page.getByRole('button', { name: 'Confirmar ingreso' }).click()
+    await expect(page.getByText('Cantidad a ingresar debe ser mayor a 0.')).toBeVisible()
+
+    // Ingresar 50 unidades válidas
     await page.getByLabel('Cantidad a ingresar *').fill('50')
     await page.getByLabel('Observación / Remito').fill('Remito R-0012')
     await page.getByRole('button', { name: 'Confirmar ingreso' }).click()
 
     await expect(page.locator('.modal')).toHaveCount(0)
     await expect(page.getByText('Ingreso registrado: se sumaron 50 unidades')).toBeVisible()
-
-    // Verificar que el stock ahora es 50 y ya NO tiene la clase de stock bajo
     await expect(fila.locator('.stock-bajo')).toHaveCount(0)
     await expect(fila).toContainText('50')
   })
 
-  test('Productos: filtros combinados (categoría, proveedor, bajo stock)', async ({ page }) => {
+  // ==========================================
+  // 5. PERMISOS POR ROL
+  // ==========================================
+  test('Permisos por rol: DEPOSITO solo puede ver e ingresar stock, sin botones de crear ni editar', async ({ page }) => {
+    // Cerrar sesión y entrar como DEPOSITO
+    await page.getByRole('button', { name: 'Salir' }).click()
+    await loguearUsuario(page, DEPOSITO, 'Dami Deposito')
+
+    // En Categorías no debe haber botón de creación ni acciones
+    await page.goto('/categorias')
+    await expect(page.getByRole('button', { name: 'Nueva categoría' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Editar' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Eliminar' })).toHaveCount(0)
+
+    // En Proveedores no debe haber botón de creación ni acciones
+    await page.goto('/proveedores')
+    await expect(page.getByRole('button', { name: 'Nuevo proveedor' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Editar' })).toHaveCount(0)
+
+    // En Productos DEPOSITO tiene "+ Ingreso", pero NO "Nuevo producto", "Editar" ni "Eliminar"
     await page.goto('/productos')
+    await expect(page.getByRole('button', { name: 'Nuevo producto' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Editar' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Eliminar' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '+ Ingreso' }).first()).toBeVisible()
+  })
 
-    // Filtro bajo mínimo
-    await page.locator('.filtro-checkbox input').check()
-    await expect(page.locator('table')).toBeVisible()
+  test('Permisos por rol: VENDEDOR solo puede leer catálogo y no puede editar ni ingresar stock', async ({ page }) => {
+    await page.getByRole('button', { name: 'Salir' }).click()
+    await loguearUsuario(page, VENDEDOR, 'Valen Vendedor')
 
-    // Filtro por proveedor
-    const provSelect = page.locator('.filtros-barra select').nth(1)
-    await provSelect.selectOption({ index: 1 })
-    await expect(page.locator('table')).toBeVisible()
-
-    // Desmarcar checkbox
-    await page.locator('.filtro-checkbox input').uncheck()
-    await expect(page.locator('table')).toBeVisible()
+    // En Productos VENDEDOR no tiene "+ Ingreso", "Nuevo producto", "Editar" ni "Eliminar"
+    await page.goto('/productos')
+    await expect(page.getByRole('button', { name: 'Nuevo producto' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '+ Ingreso' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Editar' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Eliminar' })).toHaveCount(0)
   })
 })

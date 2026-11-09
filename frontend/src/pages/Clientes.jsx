@@ -54,7 +54,7 @@ const CAMPOS_CLIENTE = [
     etiqueta: 'Teléfono',
     tipo: 'text',
     requerido: false,
-    max: 50,
+    max: 30,
     placeholder: '342-155667788',
   },
 ]
@@ -67,9 +67,17 @@ export default function Clientes() {
   const [paginas, setPaginas] = useState(1)
   const [zonaFiltro, setZonaFiltro] = useState('')
   const [buscar, setBuscar] = useState('')
+  const [buscarDebounced, setBuscarDebounced] = useState('')
   const [modalAbierto, setModalAbierto] = useState(false)
   const [clienteEnEdicion, setClienteEnEdicion] = useState(null)
   const [avisoExito, setAvisoExito] = useState(null)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBuscarDebounced(buscar)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [buscar])
 
   const cargar = useCallback(async (nuevaPagina = 1) => {
     setCargando(true)
@@ -77,7 +85,7 @@ export default function Clientes() {
     try {
       const params = { page: nuevaPagina, size: TAMAÑO }
       if (zonaFiltro) params.zona = zonaFiltro
-      if (buscar.trim()) params.buscar = buscar.trim()
+      if (buscarDebounced.trim()) params.buscar = buscarDebounced.trim()
 
       const { data } = await http.get('/clientes', { params })
       setClientes(data.items)
@@ -88,7 +96,7 @@ export default function Clientes() {
     } finally {
       setCargando(false)
     }
-  }, [zonaFiltro, buscar])
+  }, [zonaFiltro, buscarDebounced])
 
   useEffect(() => {
     cargar(1)
@@ -105,11 +113,16 @@ export default function Clientes() {
   }
 
   async function guardar(datos) {
+    const payload = {
+      ...datos,
+      telefono: datos.telefono && String(datos.telefono).trim() ? String(datos.telefono).trim() : null,
+    }
+
     if (clienteEnEdicion) {
-      await http.put(`/clientes/${clienteEnEdicion.id}`, datos)
+      await http.put(`/clientes/${clienteEnEdicion.id}`, payload)
       setAvisoExito(`Cliente "${datos.razon_social}" actualizado.`)
     } else {
-      await http.post('/clientes', datos)
+      await http.post('/clientes', payload)
       setAvisoExito(`Cliente "${datos.razon_social}" creado.`)
     }
     setModalAbierto(false)

@@ -33,8 +33,21 @@ export default function Formulario({
       if (campo.max !== undefined && texto.length > campo.max) {
         fallas[campo.nombre] = `${etiqueta} admite hasta ${campo.max} caracteres.`
       }
-      if (campo.tipo === 'number' && Number.isNaN(Number(texto))) {
-        fallas[campo.nombre] = `${etiqueta} debe ser un número.`
+      if (campo.tipo === 'number') {
+        const num = Number(texto)
+        if (Number.isNaN(num)) {
+          fallas[campo.nombre] = `${etiqueta} debe ser un número.`
+        } else {
+          if (campo.minVal !== undefined && num < campo.minVal) {
+            fallas[campo.nombre] = `${etiqueta} debe ser mayor o igual a ${campo.minVal}.`
+          }
+          if (campo.gtVal !== undefined && num <= campo.gtVal) {
+            fallas[campo.nombre] = `${etiqueta} debe ser mayor a ${campo.gtVal}.`
+          }
+          if (campo.maxVal !== undefined && num > campo.maxVal) {
+            fallas[campo.nombre] = `${etiqueta} debe ser menor o igual a ${campo.maxVal}.`
+          }
+        }
       }
       if (campo.patron && !new RegExp(campo.patron).test(texto)) {
         fallas[campo.nombre] = campo.mensajePatron ?? `${etiqueta} tiene un formato inválido.`
@@ -117,6 +130,9 @@ export default function Formulario({
             <input
               type={campo.tipo ?? 'text'}
               name={campo.nombre}
+              step={campo.step}
+              min={campo.minVal ?? (campo.gtVal !== undefined ? campo.gtVal + 0.01 : undefined)}
+              max={campo.maxVal}
               value={valores[campo.nombre] ?? ''}
               onChange={(evento) => setValor(campo.nombre, evento.target.value)}
               placeholder={campo.placeholder}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { http, mensajeDeError } from '../api/cliente.js'
+import { getUsuario } from '../api/sesion.js'
 import Tabla from '../components/Tabla.jsx'
 import Modal from '../components/Modal.jsx'
 import Formulario from '../components/Formulario.jsx'
@@ -31,7 +32,7 @@ const CAMPOS_PROVEEDOR = [
     etiqueta: 'Teléfono',
     tipo: 'text',
     requerido: false,
-    max: 50,
+    max: 30,
     placeholder: '0342-4551234',
   },
   {
@@ -45,6 +46,8 @@ const CAMPOS_PROVEEDOR = [
 ]
 
 export default function Proveedores() {
+  const usuario = getUsuario()
+  const esAdmin = usuario?.rol === 'ADMIN'
   const [proveedores, setProveedores] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
@@ -112,20 +115,24 @@ export default function Proveedores() {
     { clave: 'cuit', titulo: 'CUIT' },
     { clave: 'telefono', titulo: 'Teléfono', render: (p) => p.telefono || '-' },
     { clave: 'email', titulo: 'Email', render: (p) => p.email || '-' },
-    {
-      clave: 'acciones',
-      titulo: 'Acciones',
-      render: (prov) => (
-        <div className="fila-acciones">
-          <button type="button" className="btn-secundario" onClick={() => abrirEditar(prov)}>
-            Editar
-          </button>
-          <button type="button" className="btn-peligro" onClick={() => eliminar(prov)}>
-            Eliminar
-          </button>
-        </div>
-      ),
-    },
+    ...(esAdmin
+      ? [
+          {
+            clave: 'acciones',
+            titulo: 'Acciones',
+            render: (prov) => (
+              <div className="fila-acciones">
+                <button type="button" className="btn-secundario" onClick={() => abrirEditar(prov)}>
+                  Editar
+                </button>
+                <button type="button" className="btn-peligro" onClick={() => eliminar(prov)}>
+                  Eliminar
+                </button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -135,9 +142,11 @@ export default function Proveedores() {
           <h2>Proveedores</h2>
           <p>Gestión de proveedores comerciales.</p>
         </div>
-        <button type="button" onClick={abrirCrear}>
-          Nuevo proveedor
-        </button>
+        {esAdmin && (
+          <button type="button" onClick={abrirCrear}>
+            Nuevo proveedor
+          </button>
+        )}
       </header>
 
       {avisoExito && <p className="aviso-exito">{avisoExito}</p>}

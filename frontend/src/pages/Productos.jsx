@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { http, mensajeDeError } from '../api/cliente.js'
+import { getUsuario } from '../api/sesion.js'
 import Tabla from '../components/Tabla.jsx'
 import Modal from '../components/Modal.jsx'
 import Formulario from '../components/Formulario.jsx'
@@ -18,6 +19,10 @@ function precio(n) {
 }
 
 export default function Productos() {
+  const usuario = getUsuario()
+  const esAdmin = usuario?.rol === 'ADMIN'
+  const puedeIngreso = usuario?.rol === 'ADMIN' || usuario?.rol === 'DEPOSITO'
+
   const [productos, setProductos] = useState([])
   const [categorias, setCategorias] = useState([])
   const [proveedores, setProveedores] = useState([])
@@ -29,9 +34,17 @@ export default function Productos() {
 
   // Filtros
   const [buscar, setBuscar] = useState('')
+  const [buscarDebounced, setBuscarDebounced] = useState('')
   const [categoriaId, setCategoriaId] = useState('')
   const [proveedorId, setProveedorId] = useState('')
   const [bajoMinimo, setBajoMinimo] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBuscarDebounced(buscar)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [buscar])
 
   // Modales
   const [modalAbierto, setModalAbierto] = useState(false)
@@ -59,7 +72,7 @@ export default function Productos() {
       setError(null)
       try {
         const params = { page: nueva, size: TAMAÑO }
-        if (buscar.trim()) params.buscar = buscar.trim()
+        if (buscarDebounced.trim()) params.buscar = buscarDebounced.trim()
         if (categoriaId) params.categoria_id = Number(categoriaId)
         if (proveedorId) params.proveedor_id = Number(proveedorId)
         if (bajoMinimo) params.bajo_minimo = true
@@ -74,7 +87,7 @@ export default function Productos() {
         setCargando(false)
       }
     },
-    [buscar, categoriaId, proveedorId, bajoMinimo]
+    [buscarDebounced, categoriaId, proveedorId, bajoMinimo]
   )
 
   useEffect(() => {
@@ -163,8 +176,8 @@ export default function Productos() {
       etiqueta: 'Presentación',
       tipo: 'text',
       requerido: true,
-      min: 2,
-      max: 50,
+      min: 1,
+      max: 40,
       placeholder: 'Ej: 2.25L x6',
     },
     {
@@ -192,6 +205,8 @@ export default function Productos() {
       etiqueta: 'Precio ($)',
       tipo: 'number',
       requerido: true,
+      gtVal: 0,
+      step: '0.01',
       placeholder: 'Ej: 12500',
     },
     {
@@ -199,6 +214,8 @@ export default function Productos() {
       etiqueta: 'Stock mínimo',
       tipo: 'number',
       requerido: true,
+      minVal: 0,
+      step: '1',
       placeholder: 'Ej: 20',
     },
   ]
@@ -209,6 +226,8 @@ export default function Productos() {
       etiqueta: 'Cantidad a ingresar',
       tipo: 'number',
       requerido: true,
+      gtVal: 0,
+      step: '1',
       placeholder: 'Ej: 50',
     },
     {
@@ -231,7 +250,7 @@ export default function Productos() {
       clave: 'stock',
       titulo: 'Stock',
       render: (p) =>
-        p.stock < p.stock_minimo ? (
+        p.stock <= p.stock_minimo ? (
           <span className="stock-bajo">
             {p.stock} (bajo mín. {p.stock_minimo})
           </span>
@@ -239,28 +258,38 @@ export default function Productos() {
           p.stock
         ),
     },
-    {
-      clave: 'acciones',
-      titulo: 'Acciones',
-      render: (p) => (
-        <div className="fila-acciones">
-          <button
-            type="button"
-            className="btn-ingreso"
-            title="Ingreso de mercadería"
-            onClick={() => abrirIngreso(p)}
-          >
-            + Ingreso
-          </button>
-          <button type="button" className="btn-secundario" onClick={() => abrirEditar(p)}>
-            Editar
-          </button>
-          <button type="button" className="btn-peligro" onClick={() => eliminarProducto(p)}>
-            Eliminar
-          </button>
-        </div>
-      ),
-    },
+    ...((esAdmin || puedeIngreso)
+      ? [
+          {
+            clave: 'acciones',
+            titulo: 'Acciones',
+            render: (p) => (
+              <div className="fila-acciones">
+                {puedeIngreso && (
+                  <button
+                    type="button"
+                    className="btn-ingreso"
+                    title="Ingreso de mercadería"
+                    onClick={() => abrirIngreso(p)}
+                  >
+                    + Ingreso
+                  </button>
+                )}
+                {esAdmin && (
+                  <>
+                    <button type="button" className="btn-secundario" onClick={() => abrirEditar(p)}>
+                      Editar
+                    </button>
+                    <button type="button" className="btn-peligro" onClick={() => eliminarProducto(p)}>
+                      Eliminar
+                    </button>
+                  </>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -270,9 +299,11 @@ export default function Productos() {
           <h2>Productos</h2>
           <p>Gestión completa de catálogo, precios, stock y reposición de mercadería.</p>
         </div>
-        <button type="button" onClick={abrirCrear}>
-          Nuevo producto
-        </button>
+        {esAdmin && (
+          <button type="button" onClick={abrirCrear}>
+            Nuevo producto
+          </button>
+        )}
       </header>
 
       <div className="filtros-barra">

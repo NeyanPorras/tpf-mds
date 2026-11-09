@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { http, mensajeDeError } from '../api/cliente.js'
+import { getUsuario } from '../api/sesion.js'
 import Tabla from '../components/Tabla.jsx'
 import Modal from '../components/Modal.jsx'
 import Formulario from '../components/Formulario.jsx'
@@ -18,6 +19,8 @@ const CAMPOS_CATEGORIA = [
 ]
 
 export default function Categorias() {
+  const usuario = getUsuario()
+  const esAdmin = usuario?.rol === 'ADMIN'
   const [categorias, setCategorias] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
@@ -82,20 +85,24 @@ export default function Categorias() {
   const columnas = [
     { clave: 'id', titulo: 'ID' },
     { clave: 'nombre', titulo: 'Nombre' },
-    {
-      clave: 'acciones',
-      titulo: 'Acciones',
-      render: (cat) => (
-        <div className="fila-acciones">
-          <button type="button" className="btn-secundario" onClick={() => abrirEditar(cat)}>
-            Editar
-          </button>
-          <button type="button" className="btn-peligro" onClick={() => eliminar(cat)}>
-            Eliminar
-          </button>
-        </div>
-      ),
-    },
+    ...(esAdmin
+      ? [
+          {
+            clave: 'acciones',
+            titulo: 'Acciones',
+            render: (cat) => (
+              <div className="fila-acciones">
+                <button type="button" className="btn-secundario" onClick={() => abrirEditar(cat)}>
+                  Editar
+                </button>
+                <button type="button" className="btn-peligro" onClick={() => eliminar(cat)}>
+                  Eliminar
+                </button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -105,9 +112,11 @@ export default function Categorias() {
           <h2>Categorías</h2>
           <p>Gestión de categorías para clasificación de productos.</p>
         </div>
-        <button type="button" onClick={abrirCrear}>
-          Nueva categoría
-        </button>
+        {esAdmin && (
+          <button type="button" onClick={abrirCrear}>
+            Nueva categoría
+          </button>
+        )}
       </header>
 
       {avisoExito && <p className="aviso-exito">{avisoExito}</p>}
