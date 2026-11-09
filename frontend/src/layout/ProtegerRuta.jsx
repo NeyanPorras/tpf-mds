@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import { getUsuario } from '../api/sesion.js'
+import { useAuth } from '../auth/useAuth.js'
 import { rolPuedeVer } from '../api/permisos.js'
 
 /**
@@ -10,7 +10,7 @@ import { rolPuedeVer } from '../api/permisos.js'
  * solo exige estar logueado. El 403 definitivo lo da la API de todos modos.
  */
 export default function ProtegerRuta({ to }) {
-  const usuario = getUsuario()
+  const { usuario } = useAuth()
   if (usuario === null) {
     return <Navigate to="/login" replace />
   }

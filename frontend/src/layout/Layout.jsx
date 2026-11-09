@@ -1,14 +1,14 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { getUsuario, limpiarSesion } from '../api/sesion.js'
+import { useAuth } from '../auth/useAuth.js'
 import { seccionesDeMenu } from '../api/permisos.js'
 import './Layout.css'
 
 export default function Layout() {
   const navigate = useNavigate()
-  const usuario = getUsuario()
+  const { usuario, logout } = useAuth()
 
   function salir() {
-    limpiarSesion()
+    logout()
     navigate('/login')
   }
 
