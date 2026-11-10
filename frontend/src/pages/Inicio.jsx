@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { http, mensajeDeError } from '../api/cliente.js'
 import { crearTurnos } from '../reportes/turnos.js'
@@ -72,39 +72,51 @@ function completarDias(ventasPorDia, desde, hasta) {
 
 export default function Inicio() {
   const defaultRango = rangoEsteMes()
+
+  // Inputs del formulario
   const [desde, setDesde] = useState(defaultRango.desde)
   const [hasta, setHasta] = useState(defaultRango.hasta)
   const [presetActivo, setPresetActivo] = useState('mes')
 
-  const [dashboard, setDashboard] = useState({
-    ventas_mes: 0,
-    pedidos_pendientes: 0,
-    productos_bajo_minimo: 0,
-    clientes_activos: 0,
-    ventas_por_dia: [],
+  // Datos y rango de la última consulta exitosa (para que el gráfico no cambie
+  // hasta que la nueva consulta realmente se ejecute).
+  const [datos, setDatos] = useState({
+    dashboard: {
+      ventas_mes: 0,
+      pedidos_pendientes: 0,
+      productos_bajo_minimo: 0,
+      clientes_activos: 0,
+      ventas_por_dia: [],
+    },
+    rango: defaultRango,
   })
+
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
   const [diaSeleccionado, setDiaSeleccionado] = useState(null)
   const chartId = useId()
 
-  // Evita carreras entre consultas con turnos (mismo patrón que Reportes)
-  const turnos = useRef(crearTurnos()).current
+  // turnos instanciado una sola vez al montar
+  const [turnos] = useState(crearTurnos)
+
+  // Cancela la consulta en curso e inmediatamente destraba el botón de Actualizar
+  function cancelarConsultaEnVuelo() {
+    turnos.invalidar()
+    setCargando(false)
+  }
 
   const cargarDashboard = useCallback(
     async (fDesde, fHasta) => {
       // 1. Si falta alguna fecha no se consulta al backend
       if (!fDesde || !fHasta) {
-        turnos.invalidar()
-        setCargando(false)
+        cancelarConsultaEnVuelo()
         setError('Completá las dos fechas.')
         return
       }
 
       // 2. Validación de fechas invertidas
       if (fDesde > fHasta) {
-        turnos.invalidar()
-        setCargando(false)
+        cancelarConsultaEnVuelo()
         setError("La fecha 'desde' no puede ser posterior a 'hasta'.")
         return
       }
@@ -119,7 +131,10 @@ export default function Inicio() {
           params: { desde: fDesde, hasta: fHasta },
         })
         if (!turnos.esVigente(turno)) return
-        setDashboard(data)
+        setDatos({
+          dashboard: data,
+          rango: { desde: fDesde, hasta: fHasta },
+        })
       } catch (err) {
         if (!turnos.esVigente(turno)) return
         setError(mensajeDeError(err))
@@ -138,7 +153,7 @@ export default function Inicio() {
 
   function aplicarPreset(nombre, calcularRango) {
     const rango = calcularRango()
-    turnos.invalidar()
+    cancelarConsultaEnVuelo()
     setPresetActivo(nombre)
     setDesde(rango.desde)
     setHasta(rango.hasta)
@@ -146,7 +161,7 @@ export default function Inicio() {
   }
 
   function manejarCambioDesde(valor) {
-    turnos.invalidar()
+    cancelarConsultaEnVuelo()
     setPresetActivo(null)
     setDesde(valor)
     if (!valor || !hasta) {
@@ -159,7 +174,7 @@ export default function Inicio() {
   }
 
   function manejarCambioHasta(valor) {
-    turnos.invalidar()
+    cancelarConsultaEnVuelo()
     setPresetActivo(null)
     setHasta(valor)
     if (!desde || !valor) {
@@ -176,10 +191,16 @@ export default function Inicio() {
     cargarDashboard(desde, hasta)
   }
 
-  // Completa todos los días del período (con 0 si no hubo ventas)
+  const { dashboard, rango: rangoEfectivo } = datos
+
+  // El gráfico y su resumen se calculan sobre el rango de la consulta efectiva
   const diasCompletos = useMemo(() => {
-    return completarDias(dashboard.ventas_por_dia, desde, hasta)
-  }, [dashboard.ventas_por_dia, desde, hasta])
+    return completarDias(
+      dashboard.ventas_por_dia,
+      rangoEfectivo.desde,
+      rangoEfectivo.hasta,
+    )
+  }, [dashboard.ventas_por_dia, rangoEfectivo.desde, rangoEfectivo.hasta])
 
   const diasConVenta = diasCompletos.filter((d) => d.total > 0).length
   const maxVenta = Math.max(...diasCompletos.map((d) => d.total), 1)
@@ -359,8 +380,8 @@ export default function Inicio() {
             Días con ventas: <strong>{diasConVenta}</strong> de{' '}
             <strong>{cantidadDias}</strong> · Rango:{' '}
             <strong>
-              {desde ? fechaCorta(desde) : '—'} —{' '}
-              {hasta ? fechaCorta(hasta) : '—'}
+              {rangoEfectivo.desde ? fechaCorta(rangoEfectivo.desde) : '—'} —{' '}
+              {rangoEfectivo.hasta ? fechaCorta(rangoEfectivo.hasta) : '—'}
             </strong>
           </div>
         </div>

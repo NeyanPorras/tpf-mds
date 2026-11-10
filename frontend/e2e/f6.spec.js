@@ -160,6 +160,85 @@ test.describe('Dashboard F6: Indicadores, Gráfico y Filtros con datos reales', 
     await expect(tarjetaVentas).not.toContainText('99.999.999')
   })
 
+  test('Botón no queda trabado en Cargando al cambiar fechas con consulta en vuelo', async ({ page }) => {
+    let responder = null
+    const promesaDemorada = new Promise((resolve) => {
+      responder = resolve
+    })
+
+    await page.route('**/api/dashboard*', async (route) => {
+      const url = route.request().url()
+      if (url.includes('desde=2026-08-01')) {
+        await promesaDemorada
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ventas_mes: 1000.0,
+          pedidos_pendientes: 1,
+          productos_bajo_minimo: 1,
+          clientes_activos: 1,
+          ventas_por_dia: [{ fecha: '2026-11-01', total: 1000.0 }],
+        }),
+      })
+    })
+
+    await loguearUsuario(page, ADMIN, 'Ana Admin')
+    await page.goto('/')
+
+    const botonActualizar = page.getByRole('button', { name: /Actualizar|Cargando/ })
+    await expect(botonActualizar).toBeEnabled()
+
+    // Dispara consulta lenta
+    await page.getByRole('button', { name: 'Ago - Oct 2026 (Prueba)' }).click()
+
+    // Cambia la fecha 'Hasta' mientras la consulta está en vuelo
+    await page.getByLabel('Hasta').fill('2026-12-31')
+
+    // El botón 'Actualizar' NO debe quedar trabado en 'Cargando…' deshabilitado
+    await expect(botonActualizar).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Actualizar' })).toBeVisible()
+
+    if (responder) responder()
+  })
+
+  test('Gráfico conserva el rango efectivo y no muta al tipear fechas hasta consultar', async ({ page }) => {
+    await page.route('**/api/dashboard*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ventas_mes: 14269200.0,
+          pedidos_pendientes: 6,
+          productos_bajo_minimo: 5,
+          clientes_activos: 13,
+          ventas_por_dia: [
+            { fecha: '2026-08-01', total: 320000.0 },
+            { fecha: '2026-10-31', total: 450000.0 },
+          ],
+        }),
+      })
+    })
+
+    await loguearUsuario(page, ADMIN, 'Ana Admin')
+    await page.goto('/')
+
+    // Cargamos datos de Ago-Oct (92 días)
+    await page.getByRole('button', { name: 'Ago - Oct 2026 (Prueba)' }).click()
+    const resumenGrafico = page.locator('.grafico-resumen')
+    await expect(resumenGrafico).toContainText('01/08/2026 — 31/10/2026')
+    await expect(resumenGrafico).toContainText('92')
+
+    // Cambiamos 'Hasta' en el input a diciembre SIN apretar 'Actualizar'
+    await page.getByLabel('Hasta').fill('2026-12-31')
+
+    // El gráfico y su resumen deben seguir mostrando 01/08/2026 — 31/10/2026 (92 días)
+    await expect(resumenGrafico).toContainText('01/08/2026 — 31/10/2026')
+    await expect(resumenGrafico).toContainText('92')
+    await expect(resumenGrafico).not.toContainText('31/12/2026')
+  })
+
   test('Navegación desde las tarjetas de acceso rápido', async ({ page }) => {
     await loguearUsuario(page, ADMIN, 'Ana Admin')
     await page.goto('/')
