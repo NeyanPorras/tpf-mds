@@ -75,3 +75,10 @@
 .reportes-acciones .btn-secundario:hover:not(:disabled) {
   background-color: #cbd5e1;
 }
+
+.reportes-aplicados {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}

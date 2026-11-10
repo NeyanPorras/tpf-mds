@@ -1,19 +1,12 @@
 // Exportación de un reporte a PDF (jsPDF + autoTable) y a Excel (ExcelJS).
 // Las librerías se cargan recién al exportar, así no pesan en el resto de la app.
-import { formatear } from './formato.js'
+import { fechaLocalIso, fechaParaExcel, formatear } from './formato.js'
+
+const ANCHO_MINIMO = 10
+const ANCHO_MAXIMO = 50
 
 function nombreArchivo(reporte, extension) {
-  const hoy = new Date().toISOString().slice(0, 10)
-  return `${reporte.id}_${hoy}.${extension}`
-}
-
-// ExcelJS escribe las fechas en UTC: se arma la fecha en UTC con la hora tal
-// como viene de la base, así el Excel muestra la misma hora que la pantalla.
-function fechaParaExcel(texto) {
-  const [fecha, hora = '00:00:00'] = String(texto).split('T')
-  const [anio, mes, dia] = fecha.split('-').map(Number)
-  const [hh, mm, ss] = hora.split(':').map((parte) => Number.parseInt(parte, 10) || 0)
-  return new Date(Date.UTC(anio, mes - 1, dia, hh, mm, ss))
+  return `${reporte.id}_${fechaLocalIso()}.${extension}`
 }
 
 function descargar(blob, nombre) {
@@ -24,13 +17,23 @@ function descargar(blob, nombre) {
   document.body.appendChild(enlace)
   enlace.click()
   enlace.remove()
-  URL.revokeObjectURL(url)
+  // Firefox y Safari pueden cancelar la descarga si la URL se libera en el
+  // mismo ciclo del click: se libera en el siguiente.
+  setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
+/** Valor real para la celda de Excel: números y fechas, no texto formateado. */
+function valorParaExcel(valor, tipo) {
+  if (valor === null || valor === undefined) return null
+  if (tipo === 'moneda' || tipo === 'numero') return Number(valor)
+  if (tipo === 'fecha') return fechaParaExcel(valor)
+  return valor
 }
 
 /**
  * @param {object} reporte  Definición de reportes/definiciones.js
  * @param {object[]} filas  Filas que devolvió la API
- * @param {string} filtros  Texto con los filtros usados, para el encabezado
+ * @param {string} filtros  Texto con los filtros aplicados, para el encabezado
  */
 export async function exportarPdf(reporte, filas, filtros) {
   const [{ jsPDF }, { autoTable }] = await Promise.all([
@@ -83,22 +86,21 @@ export async function exportarExcel(reporte, filas, filtros) {
   // formateado, para que se puedan sumar y ordenar.
   for (const fila of filas) {
     hoja.addRow(
-      reporte.columnas.map((columna) => {
-        const valor = fila[columna.clave]
-        if (columna.tipo === 'moneda' || columna.tipo === 'numero') return Number(valor)
-        if (columna.tipo === 'fecha') return fechaParaExcel(valor)
-        return valor
-      }),
+      reporte.columnas.map((columna) => valorParaExcel(fila[columna.clave], columna.tipo)),
     )
   }
 
+  // Cada columna toma el ancho de su texto más largo (título o contenido).
   reporte.columnas.forEach((columna, indice) => {
+    const largoMaximo = filas.reduce(
+      (maximo, fila) => Math.max(maximo, formatear(fila[columna.clave], columna.tipo).length),
+      columna.titulo.length,
+    )
     const columnaExcel = hoja.getColumn(indice + 1)
-    columnaExcel.width = Math.max(12, columna.titulo.length + 4)
+    columnaExcel.width = Math.min(ANCHO_MAXIMO, Math.max(ANCHO_MINIMO, largoMaximo + 2))
     if (columna.tipo === 'moneda') columnaExcel.numFmt = '"$" #,##0.00'
     if (columna.tipo === 'fecha') columnaExcel.numFmt = 'dd/mm/yyyy hh:mm'
   })
-  hoja.getColumn(1).width = Math.max(hoja.getColumn(1).width, 14)
 
   const datos = await libro.xlsx.writeBuffer()
   const blob = new Blob([datos], {

@@ -1,60 +1,19 @@
 import { useState } from 'react'
 import { http, mensajeDeError } from '../api/cliente.js'
-import { getUsuario } from '../api/sesion.js'
+import { useAuth } from '../auth/useAuth.js'
 import Tabla from '../components/Tabla.jsx'
 import { reportesDelRol } from '../reportes/definiciones.js'
 import { exportarExcel, exportarPdf } from '../reportes/exportar.js'
-import { fechaCorta, formatear, rangoDelMes } from '../reportes/formato.js'
+import { armarConsulta, validar } from '../reportes/filtros.js'
+import { formatear, rangoDelMes } from '../reportes/formato.js'
 import './Reportes.css'
 
-/** Valida los filtros antes de llamar a la API (la API valida lo mismo). */
-function validar(reporte, filtros) {
-  const fallas = {}
-  if (reporte.filtros.includes('fechas')) {
-    if (!filtros.desde) fallas.desde = 'Elegí la fecha desde.'
-    if (!filtros.hasta) fallas.hasta = 'Elegí la fecha hasta.'
-    if (filtros.desde && filtros.hasta && filtros.desde > filtros.hasta) {
-      fallas.desde = "La fecha 'desde' no puede ser posterior a 'hasta'."
-    }
-  }
-  if (reporte.filtros.includes('dias')) {
-    const dias = Number(filtros.dias)
-    if (!Number.isInteger(dias) || dias < 1 || dias > 365) {
-      fallas.dias = 'Los días van de 1 a 365.'
-    }
-  }
-  if (reporte.filtros.includes('limite')) {
-    const limite = Number(filtros.limite)
-    if (!Number.isInteger(limite) || limite < 1 || limite > 50) {
-      fallas.limite = 'El límite va de 1 a 50.'
-    }
-  }
-  return fallas
-}
-
-/** Parámetros de la API y texto de los filtros para el PDF y el Excel. */
-function armarConsulta(reporte, filtros) {
-  const params = {}
-  const partes = []
-  if (reporte.filtros.includes('fechas')) {
-    params.desde = filtros.desde
-    params.hasta = filtros.hasta
-    partes.push(`Desde ${fechaCorta(filtros.desde)} hasta ${fechaCorta(filtros.hasta)}`)
-  }
-  if (reporte.filtros.includes('dias')) {
-    params.dias = Number(filtros.dias)
-    partes.push(`Sin ventas en los últimos ${filtros.dias} días`)
-  }
-  if (reporte.filtros.includes('limite')) {
-    params.limite = Number(filtros.limite)
-    partes.push(`Primeros ${filtros.limite}`)
-  }
-  partes.push(`Generado el ${new Date().toLocaleString('es-AR')}`)
-  return { params, texto: partes.join(' · ') }
-}
+// jsPDF y ExcelJS generan el archivo en el hilo principal: con muchas filas
+// la pantalla se congela unos segundos, así que se avisa antes.
+const FILAS_PARA_AVISAR = 2000
 
 export default function Reportes() {
-  const usuario = getUsuario()
+  const { usuario } = useAuth()
   const disponibles = reportesDelRol(usuario?.rol)
 
   const [idReporte, setIdReporte] = useState(disponibles[0]?.id ?? '')
@@ -85,6 +44,8 @@ export default function Reportes() {
 
   function cambiarFiltro(nombre, valor) {
     setFiltros((previos) => ({ ...previos, [nombre]: valor }))
+    // El resultado ya no corresponde a los filtros en pantalla.
+    setResultado(null)
   }
 
   async function consultar(evento) {
@@ -108,6 +69,13 @@ export default function Reportes() {
   }
 
   async function exportar(formato) {
+    const cantidad = resultado.filas.length
+    if (
+      cantidad > FILAS_PARA_AVISAR &&
+      !window.confirm(`El reporte tiene ${cantidad} filas y puede tardar unos segundos. ¿Exportar igual?`)
+    ) {
+      return
+    }
     setExportando(formato)
     setError(null)
     try {
@@ -210,6 +178,7 @@ export default function Reportes() {
           <div className="reportes-acciones">
             <span>
               {resultado.filas.length} {resultado.filas.length === 1 ? 'fila' : 'filas'}
+              <small className="reportes-aplicados">{resultado.texto}</small>
             </span>
             <button
               type="button"
