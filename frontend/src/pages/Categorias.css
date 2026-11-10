@@ -1,0 +1,55 @@
+.categorias-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.categorias-cabecera h2 {
+  margin-bottom: 0;
+}
+
+.categorias-cabecera p {
+  margin: 0.25rem 0 0;
+  color: #4b5468;
+  font-size: 0.9rem;
+}
+
+.fila-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-secundario {
+  background-color: #e2e8f0;
+  color: #1e293b;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.btn-secundario:hover:not(:disabled) {
+  background-color: #cbd5e1;
+}
+
+.btn-peligro {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.btn-peligro:hover:not(:disabled) {
+  background-color: #fecaca;
+}
+
+.aviso-exito {
+  max-width: 640px;
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  background-color: #e6f4ea;
+  color: #137333;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+

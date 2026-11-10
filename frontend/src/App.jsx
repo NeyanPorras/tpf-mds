@@ -4,6 +4,8 @@ import ProtegerRuta from './layout/ProtegerRuta.jsx'
 import Login from './pages/Login.jsx'
 import Inicio from './pages/Inicio.jsx'
 import Productos from './pages/Productos.jsx'
+import Categorias from './pages/Categorias.jsx'
+import Proveedores from './pages/Proveedores.jsx'
 import Clientes from './pages/Clientes.jsx'
 import Pedidos from './pages/Pedidos.jsx'
 import Reportes from './pages/Reportes.jsx'
@@ -20,6 +22,8 @@ export default function App() {
           <Route element={<ProtegerRuta />}>
             <Route path="/" element={<Inicio />} />
             <Route path="/productos" element={<Productos />} />
+            <Route path="/categorias" element={<Categorias />} />
+            <Route path="/proveedores" element={<Proveedores />} />
             <Route path="/pedidos" element={<Pedidos />} />
             <Route path="/reportes" element={<Reportes />} />
             <Route path="/demo" element={<Demo />} />

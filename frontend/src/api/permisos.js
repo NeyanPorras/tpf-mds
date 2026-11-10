@@ -5,11 +5,12 @@ import { ROLES } from './tipos.js'
 
 const TODOS = ROLES
 
-// Secciones visibles en la barra lateral. La ruta /usuarios todavía es un
-// placeholder (ABM de usuarios, tarea de backend pendiente) y solo la ve ADMIN.
+// Secciones visibles en la barra lateral.
 export const SECCIONES = Object.freeze([
   { to: '/', texto: 'Inicio', roles: TODOS },
   { to: '/productos', texto: 'Productos', roles: TODOS },
+  { to: '/categorias', texto: 'Categorías', roles: TODOS },
+  { to: '/proveedores', texto: 'Proveedores', roles: TODOS },
   { to: '/clientes', texto: 'Clientes', roles: ['ADMIN', 'VENDEDOR'] },
   { to: '/pedidos', texto: 'Pedidos', roles: TODOS },
   { to: '/reportes', texto: 'Reportes', roles: TODOS },
