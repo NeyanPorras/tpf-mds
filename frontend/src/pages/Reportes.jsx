@@ -6,6 +6,7 @@ import { reportesDelRol } from '../reportes/definiciones.js'
 import { exportarExcel, exportarPdf } from '../reportes/exportar.js'
 import { armarConsulta, validar } from '../reportes/filtros.js'
 import { formatear, rangoDelMes } from '../reportes/formato.js'
+import { crearTurnos } from '../reportes/turnos.js'
 import './Reportes.css'
 
 // jsPDF y ExcelJS generan el archivo en el hilo principal: con muchas filas
@@ -23,6 +24,8 @@ export default function Reportes() {
   const [cargando, setCargando] = useState(false)
   const [exportando, setExportando] = useState(null)
   const [error, setError] = useState(null)
+  // Descarta respuestas de consultas que ya no corresponden a la pantalla.
+  const [turnos] = useState(crearTurnos)
 
   const reporte = disponibles.find((item) => item.id === idReporte)
 
@@ -35,17 +38,29 @@ export default function Reportes() {
     )
   }
 
-  function cambiarReporte(id) {
-    setIdReporte(id)
+  // El resultado (y la consulta en curso, si hay) ya no corresponde a lo que
+  // está en pantalla: se descarta y el formulario queda listo para consultar.
+  function descartarResultado() {
+    turnos.invalidar()
     setResultado(null)
+    setCargando(false)
+  }
+
+  function cambiarReporte(id) {
+    descartarResultado()
+    setIdReporte(id)
     setFallas({})
     setError(null)
   }
 
   function cambiarFiltro(nombre, valor) {
     setFiltros((previos) => ({ ...previos, [nombre]: valor }))
-    // El resultado ya no corresponde a los filtros en pantalla.
-    setResultado(null)
+    descartarResultado()
+    // Las dos fechas se validan juntas: corregir una arregla el error de la otra.
+    const corregidos = nombre === 'desde' || nombre === 'hasta' ? ['desde', 'hasta'] : [nombre]
+    setFallas((previas) =>
+      Object.fromEntries(Object.entries(previas).filter(([campo]) => !corregidos.includes(campo))),
+    )
   }
 
   async function consultar(evento) {
@@ -55,16 +70,19 @@ export default function Reportes() {
     if (Object.keys(nuevasFallas).length > 0) return
 
     const { params, texto } = armarConsulta(reporte, filtros)
+    const turno = turnos.siguiente()
     setCargando(true)
     setError(null)
     try {
       const { data } = await http.get(`/reportes/${reporte.id}`, { params })
+      if (!turnos.esVigente(turno)) return
       setResultado({ reporte, filas: data, texto })
     } catch (err) {
+      if (!turnos.esVigente(turno)) return
       setResultado(null)
       setError(mensajeDeError(err))
     } finally {
-      setCargando(false)
+      if (turnos.esVigente(turno)) setCargando(false)
     }
   }
 
