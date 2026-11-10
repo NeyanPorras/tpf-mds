@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { http, mensajeDeError } from '../api/cliente.js'
-import { getUsuario, guardarSesion } from '../api/sesion.js'
+import { useAuth } from '../auth/useAuth.js'
 import './Login.css'
 
 export default function Login() {
   const navigate = useNavigate()
+  const { usuario, login } = useAuth()
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState(null)
 
   // Con sesión activa el login no agenda nada: directo al inicio.
-  if (getUsuario() !== null) {
+  if (usuario !== null) {
     return <Navigate to="/" replace />
   }
 
@@ -25,7 +26,7 @@ export default function Login() {
         email: String(datos.get('email') ?? ''),
         password: String(datos.get('password') ?? ''),
       })
-      guardarSesion(data.access_token, data.usuario)
+      login(data.access_token, data.usuario)
       navigate('/')
     } catch (err) {
       setError(mensajeDeError(err))
