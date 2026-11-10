@@ -4,6 +4,10 @@
 -- sp_confirmar_pedido, asi el stock, los movimientos y los totales
 -- quedan coherentes. Archivo generado; no editar a mano los ids.
 -- =============================================================
+-- El cliente mysql del contenedor se conecta en latin1: sin esto,
+-- los acentos se guardan mal (por ejemplo "Clásica" queda "ClÃ¡sica").
+SET NAMES utf8mb4;
+
 USE distribuidora;
 
 -- Precio de venta = precio actual del producto (se copia en cada linea).

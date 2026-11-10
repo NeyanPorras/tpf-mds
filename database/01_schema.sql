@@ -6,6 +6,10 @@
 -- =============================================================
 
 DROP DATABASE IF EXISTS distribuidora;
+-- El cliente mysql del contenedor se conecta en latin1: sin esto,
+-- los acentos se guardan mal (por ejemplo "Clásica" queda "ClÃ¡sica").
+SET NAMES utf8mb4;
+
 CREATE DATABASE distribuidora
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_0900_ai_ci;
