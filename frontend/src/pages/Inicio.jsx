@@ -1,22 +1,19 @@
-import { useCallback, useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { http, mensajeDeError } from '../api/cliente.js'
+import { crearTurnos } from '../reportes/turnos.js'
+import { fechaCorta, fechaLocalIso, formatear } from '../reportes/formato.js'
 import './Inicio.css'
-
-function formatoFechaISO(fecha) {
-  const y = fecha.getFullYear()
-  const m = String(fecha.getMonth() + 1).padStart(2, '0')
-  const d = String(fecha.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
 
 function rangoEsteMes() {
   const hoy = new Date()
-  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
-  const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)
+  const y = hoy.getFullYear()
+  const m = hoy.getMonth() + 1
+  const ultimo = new Date(y, m, 0).getDate()
+  const dos = (n) => String(n).padStart(2, '0')
   return {
-    desde: formatoFechaISO(primerDia),
-    hasta: formatoFechaISO(ultimoDia),
+    desde: `${y}-${dos(m)}-01`,
+    hasta: `${y}-${dos(m)}-${dos(ultimo)}`,
   }
 }
 
@@ -25,8 +22,8 @@ function rangoUltimos30Dias() {
   const hace30 = new Date(hoy)
   hace30.setDate(hoy.getDate() - 30)
   return {
-    desde: formatoFechaISO(hace30),
-    hasta: formatoFechaISO(hoy),
+    desde: fechaLocalIso(hace30),
+    hasta: fechaLocalIso(hoy),
   }
 }
 
@@ -37,28 +34,40 @@ function rangoSemillaPrueba() {
   }
 }
 
-function formatearMoneda(valor) {
-  const numero = typeof valor === 'number' ? valor : parseFloat(valor) || 0
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(numero)
-}
+/**
+ * Completa los días del rango con total 0 para los días sin ventas.
+ * Así el gráfico muestra la evolución real en el tiempo con sus huecos.
+ */
+function completarDias(ventasPorDia, desde, hasta) {
+  if (!desde || !hasta || desde > hasta) return ventasPorDia || []
 
-function formatearFechaCorta(fechaStr) {
-  if (!fechaStr) return ''
-  const partes = fechaStr.slice(0, 10).split('-')
-  if (partes.length !== 3) return fechaStr
-  return `${partes[2]}/${partes[1]}`
-}
+  const mapa = new Map()
+  for (const item of ventasPorDia || []) {
+    const clave = String(item.fecha).slice(0, 10)
+    mapa.set(clave, Number(item.total) || 0)
+  }
 
-function formatearFechaLarga(fechaStr) {
-  if (!fechaStr) return ''
-  const partes = fechaStr.slice(0, 10).split('-')
-  if (partes.length !== 3) return fechaStr
-  return `${partes[2]}/${partes[1]}/${partes[0]}`
+  const [a1, m1, d1] = desde.split('-').map(Number)
+  const [a2, m2, d2] = hasta.split('-').map(Number)
+  const actual = new Date(a1, m1 - 1, d1)
+  const fin = new Date(a2, m2 - 1, d2)
+
+  const diffDias = Math.round((fin - actual) / (1000 * 60 * 60 * 24))
+  if (diffDias < 0 || diffDias > 366) return ventasPorDia || []
+
+  const resultado = []
+  while (actual <= fin) {
+    const y = actual.getFullYear()
+    const m = String(actual.getMonth() + 1).padStart(2, '0')
+    const d = String(actual.getDate()).padStart(2, '0')
+    const fechaIso = `${y}-${m}-${d}`
+    resultado.push({
+      fecha: fechaIso,
+      total: mapa.get(fechaIso) || 0,
+    })
+    actual.setDate(actual.getDate() + 1)
+  }
+  return resultado
 }
 
 export default function Inicio() {
@@ -79,57 +88,108 @@ export default function Inicio() {
   const [diaSeleccionado, setDiaSeleccionado] = useState(null)
   const chartId = useId()
 
-  const cargarDashboard = useCallback(async (fDesde, fHasta) => {
-    setCargando(true)
-    setError(null)
-    setDiaSeleccionado(null)
+  // Evita carreras entre consultas con turnos (mismo patrón que Reportes)
+  const turnos = useRef(crearTurnos()).current
 
-    if (fDesde && fHasta && fDesde > fHasta) {
-      setError("La fecha 'desde' no puede ser posterior a 'hasta'.")
-      setCargando(false)
-      return
-    }
+  const cargarDashboard = useCallback(
+    async (fDesde, fHasta) => {
+      // 1. Si falta alguna fecha no se consulta al backend
+      if (!fDesde || !fHasta) {
+        turnos.invalidar()
+        setCargando(false)
+        setError('Completá las dos fechas.')
+        return
+      }
 
-    try {
-      const params = {}
-      if (fDesde) params.desde = fDesde
-      if (fHasta) params.hasta = fHasta
+      // 2. Validación de fechas invertidas
+      if (fDesde > fHasta) {
+        turnos.invalidar()
+        setCargando(false)
+        setError("La fecha 'desde' no puede ser posterior a 'hasta'.")
+        return
+      }
 
-      const { data } = await http.get('/dashboard', { params })
-      setDashboard(data)
-    } catch (err) {
-      setError(mensajeDeError(err))
-    } finally {
-      setCargando(false)
-    }
-  }, [])
+      const turno = turnos.siguiente()
+      setCargando(true)
+      setError(null)
+      setDiaSeleccionado(null)
+
+      try {
+        const { data } = await http.get('/dashboard', {
+          params: { desde: fDesde, hasta: fHasta },
+        })
+        if (!turnos.esVigente(turno)) return
+        setDashboard(data)
+      } catch (err) {
+        if (!turnos.esVigente(turno)) return
+        setError(mensajeDeError(err))
+      } finally {
+        if (turnos.esVigente(turno)) {
+          setCargando(false)
+        }
+      }
+    },
+    [turnos],
+  )
 
   useEffect(() => {
-    cargarDashboard(desde, hasta)
-  }, [cargarDashboard, desde, hasta])
+    cargarDashboard(defaultRango.desde, defaultRango.hasta)
+  }, [cargarDashboard, defaultRango.desde, defaultRango.hasta])
 
   function aplicarPreset(nombre, calcularRango) {
     const rango = calcularRango()
+    turnos.invalidar()
     setPresetActivo(nombre)
     setDesde(rango.desde)
     setHasta(rango.hasta)
+    cargarDashboard(rango.desde, rango.hasta)
+  }
+
+  function manejarCambioDesde(valor) {
+    turnos.invalidar()
+    setPresetActivo(null)
+    setDesde(valor)
+    if (!valor || !hasta) {
+      setError('Completá las dos fechas.')
+    } else if (valor > hasta) {
+      setError("La fecha 'desde' no puede ser posterior a 'hasta'.")
+    } else {
+      setError(null)
+    }
+  }
+
+  function manejarCambioHasta(valor) {
+    turnos.invalidar()
+    setPresetActivo(null)
+    setHasta(valor)
+    if (!desde || !valor) {
+      setError('Completá las dos fechas.')
+    } else if (desde > valor) {
+      setError("La fecha 'desde' no puede ser posterior a 'hasta'.")
+    } else {
+      setError(null)
+    }
   }
 
   function manejarFiltrar(e) {
     e.preventDefault()
-    setPresetActivo(null)
     cargarDashboard(desde, hasta)
   }
+
+  // Completa todos los días del período (con 0 si no hubo ventas)
+  const diasCompletos = useMemo(() => {
+    return completarDias(dashboard.ventas_por_dia, desde, hasta)
+  }, [dashboard.ventas_por_dia, desde, hasta])
+
+  const diasConVenta = diasCompletos.filter((d) => d.total > 0).length
+  const maxVenta = Math.max(...diasCompletos.map((d) => d.total), 1)
 
   // Dimensiones del gráfico SVG
   const svgAncho = 800
   const svgAlto = 260
-  const margen = { arriba: 25, derecha: 25, abajo: 45, izquierda: 80 }
+  const margen = { arriba: 25, derecha: 25, abajo: 45, izquierda: 85 }
   const plotAncho = svgAncho - margen.izquierda - margen.derecha
   const plotAlto = svgAlto - margen.arriba - margen.abajo
-
-  const ventasPorDia = dashboard.ventas_por_dia || []
-  const maxVenta = Math.max(...ventasPorDia.map((d) => d.total), 1)
 
   // Niveles del eje Y (4 divisiones)
   const nivelesY = [0, 0.33, 0.66, 1].map((pct) => ({
@@ -137,12 +197,13 @@ export default function Inicio() {
     y: margen.arriba + plotAlto - plotAlto * pct,
   }))
 
-  const cantidadDias = ventasPorDia.length
-  const anchoBarraDisponible = cantidadDias > 0 ? plotAncho / cantidadDias : 0
-  const anchoBarra = Math.min(Math.max(anchoBarraDisponible * 0.7, 6), 36)
+  const cantidadDias = diasCompletos.length
+  const anchoColumna = cantidadDias > 0 ? plotAncho / cantidadDias : 0
+  const anchoBarra = Math.min(Math.max(anchoColumna * 0.75, 2), 32)
 
-  // Salteo de etiquetas si hay muchas fechas
-  const saltoEtiquetas = cantidadDias > 15 ? Math.ceil(cantidadDias / 10) : 1
+  // Salteo dinámico de etiquetas en X según la cantidad de días del rango
+  const saltoEtiquetas =
+    cantidadDias > 45 ? Math.ceil(cantidadDias / 8) : cantidadDias > 15 ? 3 : 1
 
   return (
     <div className="dashboard">
@@ -159,10 +220,7 @@ export default function Inicio() {
               <input
                 type="date"
                 value={desde}
-                onChange={(e) => {
-                  setDesde(e.target.value)
-                  setPresetActivo(null)
-                }}
+                onChange={(e) => manejarCambioDesde(e.target.value)}
               />
             </label>
             <label className="filtro-campo">
@@ -170,10 +228,7 @@ export default function Inicio() {
               <input
                 type="date"
                 value={hasta}
-                onChange={(e) => {
-                  setHasta(e.target.value)
-                  setPresetActivo(null)
-                }}
+                onChange={(e) => manejarCambioHasta(e.target.value)}
               />
             </label>
             <button
@@ -229,7 +284,7 @@ export default function Inicio() {
             </span>
           </div>
           <div className="tarjeta-valor">
-            {formatearMoneda(dashboard.ventas_mes)}
+            {formatear(dashboard.ventas_mes, 'moneda')}
           </div>
           <p className="tarjeta-subtexto">Pedidos confirmados o entregados</p>
         </article>
@@ -262,7 +317,7 @@ export default function Inicio() {
             </span>
           </div>
           <div className="tarjeta-valor">{dashboard.pedidos_pendientes}</div>
-          <p className="tarjeta-subtexto">Estado actual pendiente de entrega</p>
+          <p className="tarjeta-subtexto">Aún no confirmados</p>
           <Link to="/pedidos" className="tarjeta-enlace">
             Ver pedidos →
           </Link>
@@ -294,21 +349,23 @@ export default function Inicio() {
         </article>
       </section>
 
-      {/* Gráfico de ventas por día */}
+      {/* Gráfico de evolución de ventas por día */}
       <section
         className={`grafico-seccion ${cargando ? 'dashboard-cargando' : ''}`}
       >
         <div className="grafico-cabecera">
           <h3>Evolución de ventas por día</h3>
           <div className="grafico-resumen">
-            Días con ventas: <strong>{ventasPorDia.length}</strong> · Rango:{' '}
+            Días con ventas: <strong>{diasConVenta}</strong> de{' '}
+            <strong>{cantidadDias}</strong> · Rango:{' '}
             <strong>
-              {formatearFechaLarga(desde)} — {formatearFechaLarga(hasta)}
+              {desde ? fechaCorta(desde) : '—'} —{' '}
+              {hasta ? fechaCorta(hasta) : '—'}
             </strong>
           </div>
         </div>
 
-        {ventasPorDia.length === 0 ? (
+        {diasConVenta === 0 ? (
           <div className="grafico-vacio">
             <div className="grafico-vacio-icono" aria-hidden="true">
               📊
@@ -317,8 +374,8 @@ export default function Inicio() {
               No se registraron ventas confirmadas en las fechas seleccionadas.
             </p>
             <small>
-              Probá ampliar el rango o seleccioná el botón &quot;Ago - Oct
-              2026&quot; para ver los datos de prueba.
+              Probá ampliar el rango o seleccioná &quot;Ago - Oct 2026
+              (Prueba)&quot; para ver los datos de prueba.
             </small>
           </div>
         ) : (
@@ -346,21 +403,19 @@ export default function Inicio() {
                       textAnchor="end"
                       className="grafico-texto-eje"
                     >
-                      {formatearMoneda(nivel.valor).replace(',00', '')}
+                      {formatear(nivel.valor, 'moneda').replace(',00', '')}
                     </text>
                   </g>
                 ))}
 
                 {/* Barras y etiquetas del eje X */}
-                {ventasPorDia.map((dia, index) => {
-                  const altura = Math.max(
-                    (dia.total / maxVenta) * plotAlto,
-                    3,
-                  )
+                {diasCompletos.map((dia, index) => {
+                  const tieneVenta = dia.total > 0
+                  const altura = tieneVenta
+                    ? Math.max((dia.total / maxVenta) * plotAlto, 3)
+                    : 2
                   const xCentro =
-                    margen.izquierda +
-                    index * anchoBarraDisponible +
-                    anchoBarraDisponible / 2
+                    margen.izquierda + index * anchoColumna + anchoColumna / 2
                   const x = xCentro - anchoBarra / 2
                   const y = margen.arriba + plotAlto - altura
                   const seleccionado =
@@ -373,10 +428,10 @@ export default function Inicio() {
                         y={y}
                         width={anchoBarra}
                         height={altura}
-                        className={`grafico-barra ${seleccionado ? 'seleccionada' : ''}`}
+                        className={`grafico-barra ${tieneVenta ? '' : 'grafico-barra-cero'} ${seleccionado ? 'seleccionada' : ''}`}
                         tabIndex={0}
                         role="button"
-                        aria-label={`${formatearFechaLarga(dia.fecha)}: ${formatearMoneda(dia.total)}`}
+                        aria-label={`${fechaCorta(dia.fecha)}: ${formatear(dia.total, 'moneda')}`}
                         onClick={() => setDiaSeleccionado(dia)}
                         onMouseEnter={() => setDiaSeleccionado(dia)}
                         onKeyDown={(e) => {
@@ -385,7 +440,7 @@ export default function Inicio() {
                           }
                         }}
                       >
-                        <title>{`${formatearFechaLarga(dia.fecha)}: ${formatearMoneda(dia.total)}`}</title>
+                        <title>{`${fechaCorta(dia.fecha)}: ${formatear(dia.total, 'moneda')}`}</title>
                       </rect>
 
                       {index % saltoEtiquetas === 0 && (
@@ -395,7 +450,7 @@ export default function Inicio() {
                           textAnchor="middle"
                           className="grafico-texto-eje"
                         >
-                          {formatearFechaCorta(dia.fecha)}
+                          {dia.fecha.slice(8, 10)}/{dia.fecha.slice(5, 7)}
                         </text>
                       )}
                     </g>
@@ -408,13 +463,11 @@ export default function Inicio() {
               <div className="grafico-info-detalle">
                 <span>
                   Fecha seleccionada:{' '}
-                  <strong>
-                    {formatearFechaLarga(diaSeleccionado.fecha)}
-                  </strong>
+                  <strong>{fechaCorta(diaSeleccionado.fecha)}</strong>
                 </span>
                 <span>
                   Total vendido:{' '}
-                  <strong>{formatearMoneda(diaSeleccionado.total)}</strong>
+                  <strong>{formatear(diaSeleccionado.total, 'moneda')}</strong>
                 </span>
               </div>
             )}

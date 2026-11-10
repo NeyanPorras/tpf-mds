@@ -246,10 +246,20 @@
 
 .grafico-barra {
   fill: #3b66e3;
-  rx: 4;
-  ry: 4;
+  rx: 3;
+  ry: 3;
   cursor: pointer;
   transition: fill 0.15s ease, opacity 0.15s ease;
+}
+
+.grafico-barra.grafico-barra-cero {
+  fill: #d5dbe7;
+  opacity: 0.5;
+}
+
+.grafico-barra.grafico-barra-cero:hover {
+  fill: #8c9cb8;
+  opacity: 0.9;
 }
 
 .grafico-barra:hover,
