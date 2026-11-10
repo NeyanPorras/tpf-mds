@@ -66,7 +66,7 @@ test.describe('F5: pedidos con líneas y falta de stock', () => {
     const alerta = page.locator('.modal .alerta-stock')
     await expect(alerta).toBeVisible()
     await expect(alerta).toContainText('Falta de stock')
-    await expect(alerta).toContainText('Pedido #40')
+    await expect(alerta).toContainText('pedido #40')
     await expect(alerta).toContainText('Solicitado')
     await expect(alerta).toContainText('Disponible')
     await expect(alerta).toContainText('se revirtió completa')
@@ -76,5 +76,23 @@ test.describe('F5: pedidos con líneas y falta de stock', () => {
     await expect(page.locator('tr', { hasText: '#40' })).toContainText(
       'PENDIENTE'
     )
+  })
+
+  test('DEPOSITO no arma ni confirma pedidos; solo marca entregado', async ({
+    page,
+  }) => {
+    await page.getByRole('button', { name: 'Salir' }).click()
+    await page.getByLabel('Email').fill('deposito@distribuidora.com')
+    await page.getByLabel('Contraseña').fill('Deposito123!')
+    await page.getByRole('button', { name: 'Ingresar' }).click()
+    await expect(page.getByText('Dami Deposito')).toBeVisible()
+
+    await page.goto('/pedidos')
+    await expect(page.getByRole('button', { name: 'Nuevo pedido' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Confirmar' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Cancelar' })).toHaveCount(0)
+
+    await page.locator('.filtros-barra select').selectOption('CONFIRMADO')
+    await expect(page.getByRole('button', { name: 'Entregar' }).first()).toBeVisible()
   })
 })
