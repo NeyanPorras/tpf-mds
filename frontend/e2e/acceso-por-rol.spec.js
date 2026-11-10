@@ -83,6 +83,7 @@ test('usuario con JSON corrupto en localStorage: no abre nada', async ({ page })
 test('usuario sin rol en la sesión: no rompe pero no ve menú', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('usuario', JSON.stringify({ id: 1, nombre: 'Fernando', email: 'f@f.com' }))
+    localStorage.setItem('access_token', 'token-sin-rol')
   })
   await page.goto('/')
   await expect(page).toHaveURL(/\/$/)
@@ -102,5 +103,5 @@ test('recargar la página mantiene la sesión y el menú', async ({ page }) => {
   await loguear(page, USUARIOS.ADMIN)
   await page.reload()
   await expect(page.getByText('Ana Admin')).toBeVisible()
-  await expect(page.locator('.barra nav a')).toHaveCount(7)
+  await expect(page.locator('.barra nav a')).toHaveCount(9)
 })
