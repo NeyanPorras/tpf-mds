@@ -136,3 +136,5 @@ backend/app/
 ```
 
 Flujo: `router → service → repository → MySQL`. Un router nunca llama a un repositorio directamente.
+
+En términos de MVC: `routers/` es el Controller; `repositories/`, `schemas/` y la base son el Model; el frontend en React es la View. `services/` es una capa de servicio entre el Controller y el Model.

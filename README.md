@@ -14,6 +14,19 @@ Aplicación web para una distribuidora de bebidas: stock de productos, clientes,
 | [docs/decisiones.md](docs/decisiones.md) | Qué decidimos y por qué. |
 | Tablero de tareas | https://claude.ai/artifact/8tsc2aeQHQmREaaMBuRK7E |
 
+## Arquitectura: MVC en capas
+
+El proyecto sigue el patrón MVC, adaptado a una API REST: el backend devuelve JSON y React arma la pantalla.
+
+| MVC | En el proyecto | Qué hace |
+|---|---|---|
+| **Model** | `backend/app/repositories/`, `backend/app/schemas/` y la base MySQL | Los datos: el SQL, la validación de entrada y salida (Pydantic) y el procedimiento almacenado |
+| **View** | `frontend/` (React) | Lo que ve el usuario: pantallas, tablas y formularios |
+| **Controller** | `backend/app/routers/` | Recibe la petición HTTP, valida permisos y responde |
+| Capa de servicio | `backend/app/services/` | Reglas de negocio, separadas del controller |
+
+Flujo de una petición: `React → router → service → repository → MySQL`. El detalle de cada capa está en [CONTRIBUTING.md](CONTRIBUTING.md#capas-del-backend).
+
 ## Cómo levantar el proyecto
 
 > Esta sección se completa a medida que cada parte esté lista (tareas D1, B1 y F1).
