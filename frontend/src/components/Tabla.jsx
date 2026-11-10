@@ -6,6 +6,7 @@ export default function Tabla({
   paginacion = null,
   cargando = false,
   mensajeVacio = 'No hay datos.',
+  claveFila = (fila) => fila.id,
 }) {
   const { pagina, paginas, onPagina } = paginacion ?? {}
 
@@ -25,8 +26,8 @@ export default function Tabla({
             </tr>
           </thead>
           <tbody>
-            {filas.map((fila) => (
-              <tr key={fila.id}>
+            {filas.map((fila, indice) => (
+              <tr key={claveFila(fila, indice)}>
                 {columnas.map((columna) => (
                   <td key={columna.clave}>
                     {columna.render ? columna.render(fila) : fila[columna.clave]}
