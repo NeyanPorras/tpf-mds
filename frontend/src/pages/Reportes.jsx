@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { http, mensajeDeError } from '../api/cliente.js'
 import { useAuth } from '../auth/useAuth.js'
 import Tabla from '../components/Tabla.jsx'
@@ -25,7 +25,7 @@ export default function Reportes() {
   const [exportando, setExportando] = useState(null)
   const [error, setError] = useState(null)
   // Descarta respuestas de consultas que ya no corresponden a la pantalla.
-  const turnos = useRef(crearTurnos()).current
+  const [turnos] = useState(crearTurnos)
 
   const reporte = disponibles.find((item) => item.id === idReporte)
 
@@ -38,22 +38,29 @@ export default function Reportes() {
     )
   }
 
-  function cambiarReporte(id) {
+  // El resultado (y la consulta en curso, si hay) ya no corresponde a lo que
+  // está en pantalla: se descarta y el formulario queda listo para consultar.
+  function descartarResultado() {
     turnos.invalidar()
-    setIdReporte(id)
     setResultado(null)
+    setCargando(false)
+  }
+
+  function cambiarReporte(id) {
+    descartarResultado()
+    setIdReporte(id)
     setFallas({})
     setError(null)
   }
 
   function cambiarFiltro(nombre, valor) {
     setFiltros((previos) => ({ ...previos, [nombre]: valor }))
-    // El resultado (y la consulta en curso, si hay) ya no corresponde a
-    // los filtros en pantalla, y el error de ese campo ya se está corrigiendo.
-    turnos.invalidar()
-    setResultado(null)
-    setCargando(false)
-    setFallas(({ [nombre]: _corregido, ...resto }) => resto)
+    descartarResultado()
+    // Las dos fechas se validan juntas: corregir una arregla el error de la otra.
+    const corregidos = nombre === 'desde' || nombre === 'hasta' ? ['desde', 'hasta'] : [nombre]
+    setFallas((previas) =>
+      Object.fromEntries(Object.entries(previas).filter(([campo]) => !corregidos.includes(campo))),
+    )
   }
 
   async function consultar(evento) {
