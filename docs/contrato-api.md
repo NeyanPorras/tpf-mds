@@ -187,20 +187,24 @@ Transiciones válidas: `PENDIENTE → CONFIRMADO → ENTREGADO` y `PENDIENTE →
 
 ## Reportes
 
-Todos aceptan `?desde=2026-08-01&hasta=2026-10-31` (por defecto, el mes actual).
+Los que filtran por fecha aceptan `?desde=2026-08-01&hasta=2026-10-31` (por defecto, el mes actual). `hasta` incluye el día completo. Si `desde` es posterior a `hasta`, responde `422 VALIDATION_ERROR`. Solo cuentan como venta los pedidos `CONFIRMADO` o `ENTREGADO`.
+
+Quién los ve: VENDEDOR los de ventas, DEPOSITO los de stock y ADMIN todos.
 
 | Ruta | Consulta SQL | Devuelve |
 |---|---|---|
-| `GET /reportes/detalle-pedidos` | INNER JOIN | `[{ "pedido_id", "fecha", "cliente", "zona", "vendedor", "producto", "cantidad", "subtotal" }]` |
-| `GET /reportes/clientes-sobre-promedio` | Subconsulta | `[{ "cliente_id", "razon_social", "total_comprado", "promedio_general" }]` |
-| `GET /reportes/productos-sin-ventas?dias=30` | Subconsulta | `[{ "producto_id", "nombre", "presentacion", "stock" }]` |
-| `GET /reportes/ventas-por-zona-categoria` | GROUP BY | `[{ "zona", "categoria", "pedidos", "unidades", "total" }]` |
-| `GET /reportes/ranking-productos?limite=10` | GROUP BY | `[{ "producto_id", "nombre", "unidades", "total" }]` |
-| `GET /reportes/stock-bajo` | Simple | `[{ "producto_id", "nombre", "stock", "stock_minimo", "proveedor" }]` |
+| `GET /reportes/detalle-pedidos` (ventas) | INNER JOIN | `[{ "pedido_id", "fecha", "cliente", "zona", "vendedor", "producto", "cantidad", "subtotal" }]` |
+| `GET /reportes/clientes-sobre-promedio` (ventas) | Subconsulta | `[{ "cliente_id", "razon_social", "total_comprado", "promedio_general" }]` |
+| `GET /reportes/productos-sin-ventas?dias=30` (stock, `dias` de 1 a 365, sin filtro de fechas) | Subconsulta | `[{ "producto_id", "nombre", "presentacion", "stock" }]` |
+| `GET /reportes/ventas-por-zona-categoria` (ventas) | GROUP BY | `[{ "zona", "categoria", "pedidos", "unidades", "total" }]` |
+| `GET /reportes/ranking-productos?limite=10` (ventas, `limite` de 1 a 50) | GROUP BY | `[{ "producto_id", "nombre", "unidades", "total" }]` |
+| `GET /reportes/stock-bajo` (stock, sin filtro de fechas) | Simple | `[{ "producto_id", "nombre", "stock", "stock_minimo", "proveedor" }]` |
 
 ## Dashboard
 
 ### `GET /dashboard`
+
+Lo ven los tres roles. Acepta `?desde=&hasta=` igual que los reportes (por defecto, el mes actual). `ventas_mes`, `clientes_activos` y `ventas_por_dia` usan ese rango. `pedidos_pendientes` y `productos_bajo_minimo` muestran el estado de hoy.
 
 ```json
 { "ventas_mes": 4850000.00, "pedidos_pendientes": 7, "productos_bajo_minimo": 4, "clientes_activos": 12,
