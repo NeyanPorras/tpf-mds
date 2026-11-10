@@ -4,6 +4,10 @@
 -- en 04_seed_pedidos.sql (necesitan el procedimiento de 03).
 -- Corre solo la primera vez que MySQL inicializa el volumen.
 -- =============================================================
+-- El cliente mysql del contenedor se conecta en latin1: sin esto,
+-- los acentos se guardan mal (por ejemplo "Clásica" queda "ClÃ¡sica").
+SET NAMES utf8mb4;
+
 USE distribuidora;
 
 -- -------------------------------------------------------------

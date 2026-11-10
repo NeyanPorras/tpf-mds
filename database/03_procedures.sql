@@ -2,6 +2,10 @@
 -- Distribuidora de bebidas - Procedimientos almacenados
 -- Ejecutar sobre la base creada por 01_schema.sql.
 -- =============================================================
+-- El cliente mysql del contenedor se conecta en latin1: sin esto,
+-- los acentos se guardan mal (por ejemplo "Clásica" queda "ClÃ¡sica").
+SET NAMES utf8mb4;
+
 USE distribuidora;
 
 -- -------------------------------------------------------------
