@@ -18,6 +18,12 @@ class PedidoCrear(BaseModel):
     lineas: list[LineaNueva] = Field(min_length=1)
 
 
+class PedidoEditar(BaseModel):
+    """Body de PUT /pedidos/{id}: reemplaza todas las líneas."""
+
+    lineas: list[LineaNueva] = Field(min_length=1)
+
+
 class ClienteAnidado(BaseModel):
     """Referencia al cliente dentro de un Pedido."""
 

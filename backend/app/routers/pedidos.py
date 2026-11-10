@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends, Query
 
 from app.core import seguridad
 from app.core.database import get_conexion
-from app.schemas.pedido import PaginaPedidos, PedidoCrear, PedidoSalida
+from app.schemas.pedido import (
+    PaginaPedidos,
+    PedidoCrear,
+    PedidoEditar,
+    PedidoSalida,
+)
 from app.services import pedidos
 
 # Permisos según el contrato: ADMIN y VENDEDOR administran pedidos;
@@ -59,6 +64,19 @@ async def crear(
 ) -> dict:
     """Crea un pedido PENDIENTE con sus líneas: ADMIN y VENDEDOR."""
     return await pedidos.PedidosService(conexion).crear(datos, usuario["id"])
+
+
+@router.put("/pedidos/{id_pedido}", response_model=PedidoSalida)
+async def editar(
+    id_pedido: int,
+    datos: PedidoEditar,
+    conexion: aiomysql.Connection = Depends(get_conexion),
+    usuario: dict = solo_admin_vendedor,
+) -> dict:
+    """Reemplaza las líneas de un pedido PENDIENTE: ADMIN y VENDEDOR."""
+    return await pedidos.PedidosService(conexion).reemplazar_lineas(
+        id_pedido, datos
+    )
 
 
 @router.post("/pedidos/{id_pedido}/confirmar", response_model=PedidoSalida)
