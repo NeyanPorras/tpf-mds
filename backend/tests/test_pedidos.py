@@ -42,8 +42,16 @@ def cliente() -> TestClient:
         claims = seguridad.decodificar_token(credenciales.credentials)
         return {"id": int(claims["sub"]), "rol": claims["rol"]}
 
+    class ConexionFalsa:
+        """Solo lo que usan las transacciones de pedidos."""
+
+        def __init__(self) -> None:
+            self.begin = AsyncMock()
+            self.commit = AsyncMock()
+            self.rollback = AsyncMock()
+
     async def conexion_falsa():
-        yield None
+        yield ConexionFalsa()
 
     app.dependency_overrides[database.get_conexion] = conexion_falsa
     app.dependency_overrides[seguridad.get_current_user] = token_a_usuario
@@ -130,6 +138,162 @@ def test_crear_con_cantidad_cero_da_422(cliente: TestClient) -> None:
         json={"cliente_id": 1, "lineas": [{"producto_id": 2, "cantidad": 0}]},
     )
     assert respuesta.status_code == 422
+
+
+# ------------------------------------------------------------------
+# Editar líneas de un PENDIENTE (PUT)
+# ------------------------------------------------------------------
+
+PRECIOS_EDITAR = {
+    2: {"id": 2, "nombre": "Coca-Cola Zero", "presentacion": "2.25L x6", "precio": 800},
+    5: {"id": 5, "nombre": "Agua Mineral", "presentacion": "1.5L", "precio": 1200},
+}
+
+
+def _cabecera_editar() -> dict:
+    return {
+        "id": 41,
+        "fecha": "2026-11-09 10:00:00",
+        "estado": "PENDIENTE",
+        "total": 0,
+        "cliente_id": 1,
+        "cliente_razon_social": "Almacén Don Pepe",
+        "vendedor_id": 2,
+        "vendedor_nombre": "Valen Vendedor",
+    }
+
+
+def _lineas_editar() -> list[dict]:
+    return [
+        {
+            "id": 90,
+            "producto_id": 2,
+            "producto_nombre": "Coca-Cola Zero",
+            "producto_presentacion": "2.25L x6",
+            "cantidad": 3,
+            "precio_unitario": 800,
+            "subtotal": 2400,
+        }
+    ]
+
+
+def test_editar_pedido_inexistente_da_404(cliente: TestClient) -> None:
+    with patch(
+        "app.repositories.pedidos.PedidosRepository.obtener_precios",
+        AsyncMock(return_value=PRECIOS_EDITAR),
+    ), patch(
+        "app.repositories.pedidos.PedidosRepository.obtener_estado_bloqueado",
+        AsyncMock(return_value=None),
+    ):
+        respuesta = cliente.put(
+            "/api/pedidos/999",
+            headers=_header(VENDEDOR),
+            json={"lineas": [{"producto_id": 2, "cantidad": 1}]},
+        )
+    assert respuesta.status_code == 404
+    assert respuesta.json()["error"]["code"] == "NOT_FOUND"
+
+
+def test_editar_pedido_confirmado_da_409(cliente: TestClient) -> None:
+    with patch(
+        "app.repositories.pedidos.PedidosRepository.obtener_precios",
+        AsyncMock(return_value=PRECIOS_EDITAR),
+    ), patch(
+        "app.repositories.pedidos.PedidosRepository.obtener_estado_bloqueado",
+        AsyncMock(return_value="CONFIRMADO"),
+    ):
+        respuesta = cliente.put(
+            "/api/pedidos/41",
+            headers=_header(VENDEDOR),
+            json={"lineas": [{"producto_id": 2, "cantidad": 1}]},
+        )
+    assert respuesta.status_code == 409
+    assert respuesta.json()["error"]["code"] == "ESTADO_INVALIDO"
+
+
+def test_editar_con_producto_inexistente_da_404(cliente: TestClient) -> None:
+    with patch(
+        "app.repositories.pedidos.PedidosRepository.obtener_precios",
+        AsyncMock(return_value={}),
+    ):
+        respuesta = cliente.put(
+            "/api/pedidos/41",
+            headers=_header(VENDEDOR),
+            json={"lineas": [{"producto_id": 9999, "cantidad": 1}]},
+        )
+    assert respuesta.status_code == 404
+    assert respuesta.json()["error"]["details"]["productos"] == [9999]
+
+
+def test_editar_con_producto_repetido_da_409(cliente: TestClient) -> None:
+    with patch(
+        "app.repositories.pedidos.PedidosRepository.obtener_precios",
+        AsyncMock(return_value=PRECIOS_EDITAR),
+    ):
+        respuesta = cliente.put(
+            "/api/pedidos/41",
+            headers=_header(VENDEDOR),
+            json={
+                "lineas": [
+                    {"producto_id": 2, "cantidad": 1},
+                    {"producto_id": 2, "cantidad": 3},
+                ]
+            },
+        )
+    assert respuesta.status_code == 409
+    assert respuesta.json()["error"]["message"].startswith(
+        "Los productos no se pueden repetir"
+    )
+
+
+def test_editar_sin_lineas_da_422(cliente: TestClient) -> None:
+    respuesta = cliente.put(
+        "/api/pedidos/41", headers=_header(VENDEDOR), json={"lineas": []}
+    )
+    assert respuesta.status_code == 422
+
+
+def test_editar_con_cantidad_cero_da_422(cliente: TestClient) -> None:
+    respuesta = cliente.put(
+        "/api/pedidos/41",
+        headers=_header(VENDEDOR),
+        json={"lineas": [{"producto_id": 2, "cantidad": 0}]},
+    )
+    assert respuesta.status_code == 422
+
+
+def test_editar_reemplaza_lineas_y_copia_el_precio(cliente: TestClient) -> None:
+    with patch(
+        "app.repositories.pedidos.PedidosRepository.obtener_precios",
+        AsyncMock(return_value=PRECIOS_EDITAR),
+    ), patch(
+        "app.repositories.pedidos.PedidosRepository.obtener_estado_bloqueado",
+        AsyncMock(return_value="PENDIENTE"),
+    ), patch(
+        "app.repositories.pedidos.PedidosRepository.eliminar_lineas",
+        AsyncMock(),
+    ) as eliminar, patch(
+        "app.repositories.pedidos.PedidosRepository.crear_linea",
+        AsyncMock(return_value=90),
+    ) as crear, patch(
+        "app.repositories.pedidos.PedidosRepository.obtener_cabecera",
+        AsyncMock(return_value=_cabecera_editar()),
+    ), patch(
+        "app.repositories.pedidos.PedidosRepository.listar_lineas",
+        AsyncMock(return_value=_lineas_editar()),
+    ):
+        respuesta = cliente.put(
+            "/api/pedidos/41",
+            headers=_header(VENDEDOR),
+            json={"lineas": [{"producto_id": 2, "cantidad": 3}]},
+        )
+
+    assert respuesta.status_code == 200
+    cuerpo = respuesta.json()
+    assert cuerpo["estado"] == "PENDIENTE"
+    assert cuerpo["lineas"][0]["id"] == 90
+    eliminar.assert_awaited_once_with(41)
+    crear.assert_awaited_once_with(41, 2, 3, 800)
 
 
 # ------------------------------------------------------------------
@@ -226,46 +390,35 @@ def _estado(estado: str | None):
     )
 
 
-def _cabecera(estado: str):
-    return (
-        patch(
-            "app.repositories.pedidos.PedidosRepository.obtener_cabecera",
-            AsyncMock(
-                return_value={
-                    "id": 1,
-                    "fecha": "2026-10-27 08:30:00",
-                    "estado": estado,
-                    "total": 0,
-                    "cliente_id": 1,
-                    "cliente_razon_social": "Almacén Don Pepe",
-                    "vendedor_id": 2,
-                    "vendedor_nombre": "Valen Vendedor",
-                }
-            ),
-        ),
-        patch(
-            "app.repositories.pedidos.PedidosRepository.listar_lineas",
-            AsyncMock(return_value=[]),
-        ),
+def _cambio_fallido():
+    """El UPDATE condicional no cambió nada porque el estado ya era otro."""
+    return patch(
+        "app.repositories.pedidos.PedidosRepository.cambiar_estado",
+        AsyncMock(return_value=False),
     )
 
 
 def test_cancelar_pedido_confirmado_da_409(cliente: TestClient) -> None:
-    parches = _cabecera("CONFIRMADO")
-    with _estado("CONFIRMADO"), parches[0], parches[1]:
+    with _cambio_fallido(), _estado("CONFIRMADO"):
         respuesta = cliente.post("/api/pedidos/1/cancelar", headers=_header(VENDEDOR))
     assert respuesta.status_code == 409
     assert respuesta.json()["error"]["code"] == "ESTADO_INVALIDO"
 
 
 def test_entregar_pedido_pendiente_da_409(cliente: TestClient) -> None:
-    parches = _cabecera("PENDIENTE")
-    with _estado("PENDIENTE"), parches[0], parches[1]:
+    with _cambio_fallido(), _estado("PENDIENTE"):
         respuesta = cliente.post(
             "/api/pedidos/1/entregar", headers=_header(DEPOSITO)
         )
     assert respuesta.status_code == 409
     assert respuesta.json()["error"]["code"] == "ESTADO_INVALIDO"
+
+
+def test_cancelar_pedido_inexistente_da_404(cliente: TestClient) -> None:
+    with _cambio_fallido(), _estado(None):
+        respuesta = cliente.post("/api/pedidos/999/cancelar", headers=_header(VENDEDOR))
+    assert respuesta.status_code == 404
+    assert respuesta.json()["error"]["code"] == "NOT_FOUND"
 
 
 # ------------------------------------------------------------------

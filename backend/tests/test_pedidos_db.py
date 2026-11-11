@@ -221,3 +221,120 @@ def test_confirmado_lo_entrega_deposito(cliente: TestClient) -> None:
     )
     assert respuesta.status_code == 200
     assert respuesta.json()["estado"] == "ENTREGADO"
+
+
+# ------------------------------------------------------------------
+# Editar líneas de un PENDIENTE (PUT /pedidos/{id}) contra MySQL real
+# ------------------------------------------------------------------
+
+OTRO_PRODUCTO = 5
+
+
+def _precio(producto_id: int) -> float:
+    filas = _consultar("SELECT precio FROM productos WHERE id = %s", (producto_id,))
+    return float(filas[0]["precio"])
+
+
+def _crear_pendiente(cliente: TestClient, producto_id: int, cantidad: int) -> int:
+    respuesta = cliente.post(
+        "/api/pedidos",
+        headers=_header(VENDEDOR),
+        json={
+            "cliente_id": 1,
+            "lineas": [{"producto_id": producto_id, "cantidad": cantidad}],
+        },
+    )
+    assert respuesta.status_code == 201
+    return respuesta.json()["id"]
+
+
+def test_editar_reemplaza_lineas_y_copia_el_precio(cliente: TestClient) -> None:
+    id_pedido = _crear_pendiente(cliente, PRODUCTO_FIJO, 1)
+
+    respuesta = cliente.put(
+        f"/api/pedidos/{id_pedido}",
+        headers=_header(VENDEDOR),
+        json={"lineas": [{"producto_id": OTRO_PRODUCTO, "cantidad": 2}]},
+    )
+    assert respuesta.status_code == 200
+    cuerpo = respuesta.json()
+
+    # La cabecera no cambió; las líneas sí.
+    assert cuerpo["id"] == id_pedido
+    assert cuerpo["estado"] == "PENDIENTE"
+    assert cuerpo["total"] == 0  # el total sigue calculándose al confirmar
+    assert cuerpo["cliente"]["id"] == 1
+    assert len(cuerpo["lineas"]) == 1
+    linea = cuerpo["lineas"][0]
+    assert linea["producto"]["id"] == OTRO_PRODUCTO
+    assert linea["cantidad"] == 2
+    assert linea["precio_unitario"] == _precio(OTRO_PRODUCTO)
+    assert linea["subtotal"] == linea["precio_unitario"] * 2
+
+    # En la base quedó una sola línea, con el producto nuevo.
+    filas = _consultar(
+        "SELECT producto_id, cantidad FROM detalle_pedido WHERE pedido_id = %s",
+        (id_pedido,),
+    )
+    assert filas == [{"producto_id": OTRO_PRODUCTO, "cantidad": 2}]
+
+    # Limpieza: el pedido sigue PENDIENTE y se cancela.
+    respuesta = cliente.post(
+        f"/api/pedidos/{id_pedido}/cancelar", headers=_header(VENDEDOR)
+    )
+    assert respuesta.status_code == 200
+    assert respuesta.json()["estado"] == "CANCELADO"
+
+
+def test_editar_pedido_confirmado_da_409(cliente: TestClient) -> None:
+    id_pedido = _crear_pendiente(cliente, PRODUCTO_FIJO, 1)
+    cliente.post(f"/api/pedidos/{id_pedido}/confirmar", headers=_header(VENDEDOR))
+
+    respuesta = cliente.put(
+        f"/api/pedidos/{id_pedido}",
+        headers=_header(VENDEDOR),
+        json={"lineas": [{"producto_id": OTRO_PRODUCTO, "cantidad": 2}]},
+    )
+    assert respuesta.status_code == 409
+    assert respuesta.json()["error"]["code"] == "ESTADO_INVALIDO"
+
+    # Las líneas del pedido confirmado no se tocaron.
+    filas = _consultar(
+        "SELECT producto_id FROM detalle_pedido WHERE pedido_id = %s", (id_pedido,)
+    )
+    assert filas == [{"producto_id": PRODUCTO_FIJO}]
+
+
+def test_editar_pedido_inexistente_da_404(cliente: TestClient) -> None:
+    respuesta = cliente.put(
+        "/api/pedidos/999999",
+        headers=_header(VENDEDOR),
+        json={"lineas": [{"producto_id": PRODUCTO_FIJO, "cantidad": 1}]},
+    )
+    assert respuesta.status_code == 404
+    assert respuesta.json()["error"]["code"] == "NOT_FOUND"
+
+
+def test_editar_con_producto_repetido_da_409(cliente: TestClient) -> None:
+    id_pedido = _crear_pendiente(cliente, PRODUCTO_FIJO, 1)
+
+    respuesta = cliente.put(
+        f"/api/pedidos/{id_pedido}",
+        headers=_header(VENDEDOR),
+        json={
+            "lineas": [
+                {"producto_id": OTRO_PRODUCTO, "cantidad": 1},
+                {"producto_id": OTRO_PRODUCTO, "cantidad": 3},
+            ]
+        },
+    )
+    assert respuesta.status_code == 409
+    assert respuesta.json()["error"]["message"].startswith(
+        "Los productos no se pueden repetir"
+    )
+
+    # El pedido original quedó intacto y se puede cancelar.
+    respuesta = cliente.post(
+        f"/api/pedidos/{id_pedido}/cancelar", headers=_header(VENDEDOR)
+    )
+    assert respuesta.status_code == 200

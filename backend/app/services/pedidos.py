@@ -17,6 +17,7 @@ from app.schemas.pedido import (
     LineaSalida,
     PaginaPedidos,
     PedidoCrear,
+    PedidoEditar,
     ProductoDeLinea,
     VendedorAnidado,
 )
@@ -143,6 +144,75 @@ class PedidosService:
         return await self._armar(id_nuevo, con_lineas=True)
 
     # ------------------------------------------------------------------
+    # Editar líneas de un PENDIENTE
+    # ------------------------------------------------------------------
+
+    async def reemplazar_lineas(
+        self, id_pedido: int, datos: PedidoEditar
+    ) -> dict[str, Any]:
+        """Reemplaza todas las líneas de un pedido PENDIENTE (PUT).
+
+        La cabecera no cambia: mismo cliente, vendedor y fecha. El precio de
+        cada línea se copia del producto en este momento, porque la línea es
+        nueva. El total se sigue calculando al confirmar.
+        """
+        ids = [linea.producto_id for linea in datos.lineas]
+        productos_data = await self.repo.obtener_precios(ids)
+        faltantes = sorted(set(ids) - set(productos_data))
+        if faltantes:
+            raise ApiError(
+                estado_http=404,
+                mensaje="Algún producto del pedido no existe.",
+                detalle={"productos": faltantes},
+            )
+        repetidos = sorted(
+            {id_producto for id_producto in ids if ids.count(id_producto) > 1}
+        )
+        if repetidos:
+            raise ApiError(
+                estado_http=409,
+                mensaje="Los productos no se pueden repetir en un pedido.",
+                detalle={"productos": repetidos},
+            )
+
+        # El FOR UPDATE bloquea la misma fila que el SP de confirmación:
+        # si se confirma al mismo tiempo, una de las dos operaciones espera
+        # y después ve el estado real (nunca se pisan las líneas).
+        await self.conexion.begin()
+        try:
+            estado = await self.repo.obtener_estado_bloqueado(id_pedido)
+            if estado is None:
+                await self.conexion.rollback()
+                raise ApiError(
+                    estado_http=404,
+                    mensaje="El pedido no existe.",
+                    detalle={"pedido_id": id_pedido},
+                )
+            if estado != "PENDIENTE":
+                await self.conexion.rollback()
+                raise self._error_estado(estado, "PENDIENTE", "editar")
+
+            await self.repo.eliminar_lineas(id_pedido)
+            for linea in datos.lineas:
+                await self.repo.crear_linea(
+                    id_pedido,
+                    linea.producto_id,
+                    linea.cantidad,
+                    productos_data[linea.producto_id]["precio"],
+                )
+            await self.conexion.commit()
+        except ApiError:
+            raise
+        except aiomysql.MySQLError as error:
+            await self.conexion.rollback()
+            raise ApiError(
+                estado_http=500,
+                mensaje="No se pudo actualizar el pedido.",
+            ) from error
+
+        return await self._armar(id_pedido, con_lineas=True)
+
+    # ------------------------------------------------------------------
     # Confirmar (con el procedimiento almacenado)
     # ------------------------------------------------------------------
 
@@ -218,30 +288,47 @@ class PedidosService:
 
     async def cancelar(self, id_pedido: int) -> dict[str, Any]:
         """Solo un pedido PENDIENTE se cancela."""
-        await self.obtener(id_pedido)
-        await self._exigir_estado(id_pedido, "PENDIENTE", "cancelar")
-        await self.repo.cambiar_estado(id_pedido, "CANCELADO")
-        return await self._armar(id_pedido, con_lineas=True)
+        return await self._transicionar(
+            id_pedido, "CANCELADO", "PENDIENTE", "cancelar"
+        )
 
     async def entregar(self, id_pedido: int) -> dict[str, Any]:
         """Solo un pedido CONFIRMADO se puede marcar ENTREGADO."""
-        await self.obtener(id_pedido)
-        await self._exigir_estado(id_pedido, "CONFIRMADO", "entregar")
-        await self.repo.cambiar_estado(id_pedido, "ENTREGADO")
-        return await self._armar(id_pedido, con_lineas=True)
+        return await self._transicionar(
+            id_pedido, "ENTREGADO", "CONFIRMADO", "entregar"
+        )
 
-    async def _exigir_estado(self, id_pedido: int, esperado: str, accion: str) -> None:
+    async def _transicionar(
+        self, id_pedido: int, nuevo: str, esperado: str, accion: str
+    ) -> dict[str, Any]:
+        """Cambia el estado con un UPDATE condicional, sin ventana de carrera.
+
+        Si el pedido no está en `esperado` (por ejemplo, lo confirmaron justo
+        antes), el UPDATE no toca nada y se responde 404/409 con el estado real.
+        """
+        if await self.repo.cambiar_estado(id_pedido, nuevo, esperado):
+            return await self._armar(id_pedido, con_lineas=True)
+
         estado = await self.repo.obtener_estado(id_pedido)
-        if estado != esperado:
+        if estado is None:
             raise ApiError(
-                estado_http=409,
-                code="ESTADO_INVALIDO",
-                mensaje=(
-                    f"Solo se puede {accion} un pedido {esperado} "
-                    f"(estado actual: {estado})"
-                ),
-                detalle={"estado_actual": estado, "estado_necesario": esperado},
+                estado_http=404,
+                mensaje="El pedido no existe.",
+                detalle={"pedido_id": id_pedido},
             )
+        raise self._error_estado(estado, esperado, accion)
+
+    @staticmethod
+    def _error_estado(estado: str, esperado: str, accion: str) -> ApiError:
+        return ApiError(
+            estado_http=409,
+            code="ESTADO_INVALIDO",
+            mensaje=(
+                f"Solo se puede {accion} un pedido {esperado} "
+                f"(estado actual: {estado})"
+            ),
+            detalle={"estado_actual": estado, "estado_necesario": esperado},
+        )
 
 
 def _a_salida(fila: dict[str, Any], lineas: list[dict[str, Any]]) -> dict[str, Any]:

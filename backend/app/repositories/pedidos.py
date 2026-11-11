@@ -111,6 +111,20 @@ class PedidosRepository:
             fila: tuple[Any, ...] | None = await cursor.fetchone()
             return fila[0] if fila is not None else None
 
+    async def obtener_estado_bloqueado(self, id_pedido: int) -> str | None:
+        """Estado del pedido con `FOR UPDATE`: solo dentro de una transacción.
+
+        Bloquea la misma fila que bloquea `sp_confirmar_pedido`, así una
+        edición y una confirmación simultáneas no se pisan.
+        """
+        async with self.conexion.cursor() as cursor:
+            await cursor.execute(
+                "SELECT estado FROM pedidos WHERE id = %s FOR UPDATE",
+                (id_pedido,),
+            )
+            fila: tuple[Any, ...] | None = await cursor.fetchone()
+            return fila[0] if fila is not None else None
+
     async def obtener_precios(
         self, ids_productos: list[int]
     ) -> dict[int, dict[str, Any]]:
@@ -149,12 +163,27 @@ class PedidosRepository:
             )
             return cursor.lastrowid
 
-    async def cambiar_estado(self, id_pedido: int, estado: str) -> None:
-        """Pasa el pedido al estado indicado (solo transiciones válidas)."""
+    async def eliminar_lineas(self, id_pedido: int) -> None:
+        """Borra todas las líneas del pedido (para reemplazarlas juntas)."""
         async with self.conexion.cursor() as cursor:
             await cursor.execute(
-                "UPDATE pedidos SET estado = %s WHERE id = %s", (estado, id_pedido)
+                "DELETE FROM detalle_pedido WHERE pedido_id = %s", (id_pedido,)
             )
+
+    async def cambiar_estado(
+        self, id_pedido: int, estado: str, estado_esperado: str
+    ) -> bool:
+        """Cambia el estado solo si sigue siendo `estado_esperado`.
+
+        El WHERE evita la carrera entre confirmar y cancelar/entregar: si el
+        SP cambió el estado mientras tanto, no se pisa. Devuelve si cambió.
+        """
+        async with self.conexion.cursor() as cursor:
+            await cursor.execute(
+                "UPDATE pedidos SET estado = %s WHERE id = %s AND estado = %s",
+                (estado, id_pedido, estado_esperado),
+            )
+            return cursor.rowcount == 1
 
     async def llamar_sp_confirmar(self, id_pedido: int, usuario_id: int) -> None:
         """Llama `sp_confirmar_pedido`: transacción completa en la base.

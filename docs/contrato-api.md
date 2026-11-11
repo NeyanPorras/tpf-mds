@@ -177,6 +177,15 @@ Transiciones válidas: `PENDIENTE → CONFIRMADO → ENTREGADO` y `PENDIENTE →
 - `total` se calcula al confirmar.
 - `cantidad > 0`, al menos una línea, sin productos repetidos.
 
+`PUT /pedidos/{id}` reemplaza **todas** las líneas de un pedido `PENDIENTE`; no cambia cliente, vendedor ni fecha. Lleva las mismas líneas que `POST /pedidos`, sin `cliente_id`:
+
+```json
+// request
+{ "lineas": [ { "producto_id": 10, "cantidad": 5 }, { "producto_id": 14, "cantidad": 2 } ] }
+```
+
+Responde `200` con el `Pedido` actualizado. Si el pedido no está `PENDIENTE` → `409 ESTADO_INVALIDO`; si un producto no existe → `404`; si hay productos repetidos → `409`. El total se sigue calculando al confirmar.
+
 `POST /pedidos/{id}/confirmar` → `200` con el `Pedido` confirmado, o:
 
 ```json
