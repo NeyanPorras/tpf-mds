@@ -106,13 +106,15 @@ test('el login correcto entra y muestra el usuario en la sidebar', async ({ page
 
 test('un 401 de la API limpia la sesión y manda al login', async ({ page }) => {
   await loguearAdmin(page)
-  // Meto un token truchado: el próximo request responde 401 y el
-  // interceptor lo manda al login.
+  // Meto un token truchado: el dashboard consulta la API al montar, el
+  // request responde 401 y el interceptor limpia la sesión y manda al login.
   await page.evaluate(() => localStorage.setItem('access_token', 'token-truchado'))
   await page.goto('/')
-  await page.getByRole('button', { name: 'Probar redirect por 401' }).click()
-  await page.waitForURL(/\/login$/)
+  // El redirect usa window.location.assign: se espera la URL con reintentos
+  // en vez de "waitForURL", que falla si la navegación dura se aborta.
+  await expect(page).toHaveURL(/\/login$/, { timeout: 15000 })
   await expect(page.locator('h1')).toContainText('Distribuidora de bebidas')
+  expect(await page.evaluate(() => localStorage.getItem('access_token'))).toBeNull()
 })
 
 test('el listado de productos muestra datos reales y pagina', async ({ page }) => {
