@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import './Modal.css'
 
-export default function Modal({ abierto, titulo, onCerrar, children }) {
+export default function Modal({ abierto, titulo, onCerrar, children, className = '' }) {
   useEffect(() => {
     if (!abierto) {
       return undefined
@@ -26,7 +26,7 @@ export default function Modal({ abierto, titulo, onCerrar, children }) {
       role="presentation"
     >
       <div
-        className="modal"
+        className={`modal ${className}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
