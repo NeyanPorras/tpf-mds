@@ -20,6 +20,7 @@ from app.routers import (
     proveedores,
     reportes,
     salud,
+    usuarios,
 )
 
 logger = logging.getLogger("uvicorn.error")
@@ -111,6 +112,7 @@ def crear_app() -> FastAPI:
     app.include_router(clientes.router, prefix=settings.API_PREFIX)
     app.include_router(pedidos.router, prefix=settings.API_PREFIX)
     app.include_router(reportes.router, prefix=settings.API_PREFIX)
+    app.include_router(usuarios.router, prefix=settings.API_PREFIX)
     return app
 
 
