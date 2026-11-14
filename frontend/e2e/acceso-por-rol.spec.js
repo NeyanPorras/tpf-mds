@@ -103,5 +103,5 @@ test('recargar la página mantiene la sesión y el menú', async ({ page }) => {
   await loguear(page, USUARIOS.ADMIN)
   await page.reload()
   await expect(page.getByText('Ana Admin')).toBeVisible()
-  await expect(page.locator('.barra nav a')).toHaveCount(9)
+  await expect(page.locator('.barra nav a')).toHaveCount(8)
 })
