@@ -70,20 +70,26 @@ Devuelve el objeto `usuario` del token actual.
 
 | Método | Ruta | Body | Respuesta |
 |---|---|---|---|
-| GET | `/usuarios` | — | Listado paginado de `Usuario` |
+| GET | `/usuarios` | — | Listado paginado de `Usuario` (activos e inactivos) |
+| GET | `/usuarios/{id}` | — | `Usuario` |
 | POST | `/usuarios` | `UsuarioCrear` | `201` + `Usuario` |
 | PUT | `/usuarios/{id}` | `UsuarioEditar` | `Usuario` |
-| DELETE | `/usuarios/{id}` | — | `204` |
+| DELETE | `/usuarios/{id}` | — | `204` (desactiva) |
 
 ```json
-// Usuario
+// Usuario (nunca incluye la contraseña ni su hash)
 { "id": 2, "nombre": "Valen Vendedor", "email": "ventas@distribuidora.com", "rol": "VENDEDOR", "activo": true }
 // UsuarioCrear
 { "nombre": "Valen Vendedor", "email": "ventas@distribuidora.com", "password": "Venta123!", "rol": "VENDEDOR" }
-// UsuarioEditar: mismos campos, todos opcionales; password solo si se cambia
+// UsuarioEditar: mismos campos más "activo", todos opcionales; password solo si se cambia
 ```
 
 Validación: email válido y único; password mínimo 8 caracteres con al menos un número.
+
+- La contraseña se guarda con bcrypt. Email repetido → `409`.
+- `DELETE` es una baja lógica (`activo = false`): pedidos y movimientos referencian al usuario. Un usuario inactivo no puede loguearse y su token deja de valer en el siguiente request. Se reactiva con `PUT { "activo": true }`.
+- Un cambio de rol aplica en el siguiente request con el mismo token: el rol se lee de la base, no del token.
+- El ADMIN no puede desactivarse ni quitarse el rol `ADMIN` a sí mismo → `409`.
 
 ## Categorías
 

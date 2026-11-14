@@ -15,7 +15,6 @@ export const SECCIONES = Object.freeze([
   { to: '/pedidos', texto: 'Pedidos', roles: TODOS },
   { to: '/reportes', texto: 'Reportes', roles: TODOS },
   { to: '/usuarios', texto: 'Usuarios', roles: ['ADMIN'] },
-  { to: '/demo', texto: 'Componentes', roles: TODOS },
 ])
 
 /** Links que ve un rol en el menú: exactamente su rebanada de la API. */

@@ -34,15 +34,17 @@ async function loguearAdmin(page) {
 test('ADMIN ve todo el menú, incluido Usuarios', async ({ page }) => {
   await loguearAdmin(page)
   const links = page.locator('.barra nav a')
-  await expect(links).toHaveCount(9)
+  await expect(links).toHaveCount(8)
   await expect(page.locator('.barra nav')).toContainText('Clientes')
   await expect(page.locator('.barra nav')).toContainText('Usuarios')
+  // La guía de componentes (/demo) ya no está en el menú.
+  await expect(page.locator('.barra nav')).not.toContainText('Componentes')
 })
 
 test('VENDEDOR ve Clientes pero no Usuarios', async ({ page }) => {
   await loguear(page, VENDEDOR)
   const links = page.locator('.barra nav a')
-  await expect(links).toHaveCount(8)
+  await expect(links).toHaveCount(7)
   await expect(page.locator('.barra nav')).toContainText('Clientes')
   await expect(page.locator('.barra nav')).not.toContainText('Usuarios')
 })
@@ -50,7 +52,7 @@ test('VENDEDOR ve Clientes pero no Usuarios', async ({ page }) => {
 test('DEPOSITO no ve ni Clientes ni Usuarios', async ({ page }) => {
   await loguear(page, DEPOSITO)
   const links = page.locator('.barra nav a')
-  await expect(links).toHaveCount(7)
+  await expect(links).toHaveCount(6)
   await expect(page.locator('.barra nav')).not.toContainText('Clientes')
   await expect(page.locator('.barra nav')).not.toContainText('Usuarios')
 })
@@ -72,7 +74,8 @@ test('ADMIN sí entra a /usuarios', async ({ page }) => {
   await loguearAdmin(page)
   await page.goto('/usuarios')
   await expect(page).toHaveURL(/\/usuarios$/)
-  await expect(page.getByText('ABM de usuarios')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Usuarios' })).toBeVisible()
+  await expect(page.locator('table')).toContainText('admin@distribuidora.com')
 })
 
 test('sin sesión, cualquier ruta interna manda al login', async ({ page }) => {

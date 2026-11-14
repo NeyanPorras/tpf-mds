@@ -1,0 +1,35 @@
+.usuarios-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.usuarios-cabecera h2 {
+  margin-bottom: 0;
+}
+
+.usuarios-cabecera p {
+  margin: 0.25rem 0 0;
+  color: #4b5468;
+  font-size: 0.9rem;
+}
+
+.usuario-estado {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.usuario-estado.activo {
+  background-color: #e6f4ea;
+  color: #137333;
+}
+
+.usuario-estado.inactivo {
+  background-color: #eef0f4;
+  color: #5b6475;
+}
