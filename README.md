@@ -2,7 +2,7 @@
 
 Aplicación web para una distribuidora de bebidas: stock de productos, clientes, pedidos con confirmación transaccional y reportes. Stack: MySQL 8, FastAPI y React.
 
-**Entrega:** 10 de noviembre de 2026.
+**Entrega:** 15 de noviembre de 2026.
 
 ## Documentación
 
@@ -12,6 +12,8 @@ Aplicación web para una distribuidora de bebidas: stock de productos, clientes,
 | [docs/contrato-api.md](docs/contrato-api.md) | Endpoints, JSON y errores. Lo que acuerdan backend y frontend. |
 | [docs/modelo-er.md](docs/modelo-er.md) | Tablas, relaciones, restricciones y el procedimiento almacenado. |
 | [docs/decisiones.md](docs/decisiones.md) | Qué decidimos y por qué. |
+| [docs/informe.md](docs/informe.md) | Cada requisito del enunciado y dónde está implementado. |
+| [docs/capturas/](docs/capturas/) | Capturas de Swagger (`/docs`) con los endpoints y el login JWT. |
 | Tablero de tareas | https://claude.ai/artifact/8tsc2aeQHQmREaaMBuRK7E |
 
 ## Arquitectura: MVC en capas
@@ -29,7 +31,15 @@ Flujo de una petición: `React → router → service → repository → MySQL`.
 
 ## Cómo levantar el proyecto
 
-> Esta sección se completa a medida que cada parte esté lista (tareas D1, B1 y F1).
+Requisitos:
+
+| Herramienta | Versión |
+|---|---|
+| Docker Desktop | Cualquiera reciente (o MySQL 8 local, ver la alternativa) |
+| Python | 3.12 o superior |
+| Node.js | 20.19 o superior (lo pide Vite) |
+
+Los comandos son para PowerShell en Windows y se corren desde la carpeta del proyecto. Se levantan tres cosas, cada una en su terminal: la base, el backend y el frontend.
 
 ### 1. Base de datos (Docker)
 
@@ -59,6 +69,8 @@ mysqld --datadir=<carpeta>/data --port=3307
 # 3. Cargar esquema y usuarios:
 Get-Content database/01_schema.sql | mysql -uroot -p --port=3307 --force
 Get-Content database/02_seed.sql | mysql -uroot -p --port=3307 --force
+Get-Content database/03_procedures.sql | mysql -uroot -p --port=3307 --force
+Get-Content database/04_seed_pedidos.sql | mysql -uroot -p --port=3307 --force
 ```
 
 **Recrear la base desde cero** (después de cambiar un `.sql`, o si se rompió algo):
@@ -106,7 +118,9 @@ copy .env.example .env
 uvicorn app.main:app --reload
 ```
 
-Documentación interactiva: http://localhost:8000/docs
+El `.env` es obligatorio: sin él, el backend usa el puerto `3306` y no encuentra la base de Docker (`3307`). Si `/api/health` responde `503`, revisar que la base esté levantada y el `.env` copiado.
+
+Documentación interactiva (Swagger): http://localhost:8000/docs. Para probar endpoints protegidos: `POST /api/auth/login`, copiar el `access_token` y pegarlo en el botón **Authorize**.
 
 ### 3. Frontend
 
@@ -117,7 +131,26 @@ copy .env.example .env
 npm run dev
 ```
 
-Abrir http://localhost:5173
+Abrir http://localhost:5173 e ingresar con un usuario de prueba.
+
+### 4. Tests
+
+Backend (desde `backend/`, con el venv activado). Son 94 tests; los de `*_db.py` necesitan la base levantada:
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+Frontend (desde `frontend/`): tests unitarios y E2E con Playwright. Los E2E necesitan la base, el backend y el frontend levantados; `playwright install` se corre una sola vez:
+
+```bash
+npm test
+npx playwright install chromium
+npx playwright test
+```
+
+Los tests de base y los E2E escriben datos en la base de desarrollo (pedidos, categorías, usuarios). Antes de una demo, recrear la base con `docker compose down -v` y `docker compose up -d`.
 
 ## Usuarios de prueba
 
@@ -128,6 +161,8 @@ Se definen en `database/02_seed.sql`. Son solo para desarrollo.
 | ADMIN | `admin@distribuidora.com` | `Admin123!` |
 | VENDEDOR | `ventas@distribuidora.com` | `Venta123!` |
 | DEPOSITO | `deposito@distribuidora.com` | `Deposito123!` |
+
+El ADMIN puede crear más usuarios desde la pantalla **Usuarios**.
 
 ### Datos de ejemplo
 
