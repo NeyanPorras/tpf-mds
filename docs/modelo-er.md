@@ -96,6 +96,7 @@ erDiagram
 | `UNIQUE (pedido_id, producto_id)` | detalle_pedido | Un producto aparece una sola vez por pedido |
 | `ON DELETE RESTRICT` | todas las FK, salvo la de abajo | No se puede borrar un producto, cliente o categoría con historial |
 | `ON DELETE CASCADE` | detalle_pedido.pedido_id | Si se borra un pedido pendiente, se van sus líneas |
+| `activo` en vez de borrar | usuarios | Pedidos y movimientos referencian al usuario con `RESTRICT`: dar de baja un usuario es desactivarlo (`DELETE /usuarios/{id}` pone `activo = false`) |
 
 ## Normalización
 
