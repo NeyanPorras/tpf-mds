@@ -14,6 +14,7 @@ Aplicación web para una distribuidora de bebidas: stock de productos, clientes,
 | [docs/decisiones.md](docs/decisiones.md) | Qué decidimos y por qué. |
 | [docs/informe.md](docs/informe.md) | Cada requisito del enunciado y dónde está implementado. |
 | [docs/capturas/](docs/capturas/) | Capturas de Swagger (`/docs`) con los endpoints y el login JWT. |
+| [docs/guion-demo.md](docs/guion-demo.md) | Guion de la demo: qué mostrar, en qué orden y quién, en menos de 15 minutos. |
 | Tablero de tareas | https://claude.ai/artifact/8tsc2aeQHQmREaaMBuRK7E |
 
 ## Arquitectura: MVC en capas
