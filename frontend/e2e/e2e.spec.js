@@ -74,7 +74,8 @@ test('ADMIN sí entra a /usuarios', async ({ page }) => {
   await loguearAdmin(page)
   await page.goto('/usuarios')
   await expect(page).toHaveURL(/\/usuarios$/)
-  await expect(page.getByText('ABM de usuarios')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Usuarios' })).toBeVisible()
+  await expect(page.locator('table')).toContainText('admin@distribuidora.com')
 })
 
 test('sin sesión, cualquier ruta interna manda al login', async ({ page }) => {
