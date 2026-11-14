@@ -106,6 +106,9 @@ def test_listado_nunca_devuelve_el_hash(cliente: TestClient) -> None:
         ({"email": "no-es-un-email"}, "email"),
         ({"rol": "SUPERUSUARIO"}, "rol"),
         ({"nombre": "A"}, "nombre"),
+        ({"nombre": "   "}, "nombre"),
+        # 44 caracteres pero 84 bytes: bcrypt no acepta más de 72 bytes.
+        ({"password": "ñ" * 40 + "1234"}, "password"),
     ],
 )
 def test_alta_invalida_da_422(cliente: TestClient, cambio: dict, campo: str) -> None:
@@ -169,3 +172,19 @@ def test_usuario_inexistente_da_404(cliente: TestClient) -> None:
     with patch(f"{REPO}.obtener_por_id", lecturas):
         respuesta = cliente.delete("/api/usuarios/99", headers=_header(ADMIN))
     assert respuesta.status_code == 404
+
+
+def test_editar_email_solo_en_mayusculas_no_choca_consigo_mismo(cliente: TestClient) -> None:
+    """La base compara emails sin distinguir mayúsculas: no es un duplicado."""
+    guardado = {**VENDEDOR, "email": "Ventas@Distribuidora.com"}
+    lecturas = AsyncMock(side_effect=[ADMIN, guardado, {**guardado, "email": "ventas@distribuidora.com"}])
+    with patch(f"{REPO}.obtener_por_id", lecturas), patch(
+        f"{REPO}.buscar_por_email", AsyncMock(return_value=guardado)
+    ) as buscar, patch(f"{REPO}.id_de_rol", AsyncMock(return_value=2)), patch(
+        f"{REPO}.actualizar", AsyncMock()
+    ):
+        respuesta = cliente.put(
+            "/api/usuarios/2", headers=_header(ADMIN), json={"email": "ventas@distribuidora.com"}
+        )
+    assert respuesta.status_code == 200
+    buscar.assert_not_awaited()

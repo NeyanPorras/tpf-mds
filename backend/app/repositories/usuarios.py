@@ -72,22 +72,23 @@ class UsuariosRepository:
             return cursor.lastrowid
 
     async def actualizar(
-        self, id_usuario: int, nombre: str, email: str, rol_id: int, activo: bool
+        self,
+        id_usuario: int,
+        nombre: str,
+        email: str,
+        rol_id: int,
+        activo: bool,
+        password_hash: str | None = None,
     ) -> None:
-        """Actualiza los datos del usuario (la contraseña va aparte)."""
+        """Actualiza el usuario en un solo UPDATE (la contraseña, solo si viene)."""
+        columnas = "nombre = %s, email = %s, rol_id = %s, activo = %s"
+        parametros: list[Any] = [nombre, email, rol_id, activo]
+        if password_hash is not None:
+            columnas += ", password_hash = %s"
+            parametros.append(password_hash)
         async with self.conexion.cursor() as cursor:
             await cursor.execute(
-                "UPDATE usuarios SET nombre = %s, email = %s, rol_id = %s, activo = %s "
-                "WHERE id = %s",
-                (nombre, email, rol_id, activo, id_usuario),
-            )
-
-    async def cambiar_password(self, id_usuario: int, password_hash: str) -> None:
-        """Reemplaza el hash bcrypt de la contraseña."""
-        async with self.conexion.cursor() as cursor:
-            await cursor.execute(
-                "UPDATE usuarios SET password_hash = %s WHERE id = %s",
-                (password_hash, id_usuario),
+                f"UPDATE usuarios SET {columnas} WHERE id = %s", (*parametros, id_usuario)
             )
 
     async def desactivar(self, id_usuario: int) -> None:

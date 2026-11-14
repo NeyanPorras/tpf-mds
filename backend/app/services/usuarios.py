@@ -59,19 +59,19 @@ class UsuariosService:
         }
         if id_usuario == operador["id"] and (nuevo["rol"] != "ADMIN" or not nuevo["activo"]):
             raise ApiError(estado_http=409, mensaje=SIN_AUTOBLOQUEO)
-        if nuevo["email"] != actual["email"]:
+        # La columna compara sin distinguir mayúsculas: acá también.
+        if nuevo["email"].lower() != actual["email"].lower():
             await self._email_libre(nuevo["email"])
         rol_id = await self._id_de_rol(nuevo["rol"])
+        nuevo_hash = (
+            seguridad.hash_password(datos.password) if datos.password is not None else None
+        )
         try:
             await self.repo.actualizar(
-                id_usuario, nuevo["nombre"], nuevo["email"], rol_id, nuevo["activo"]
+                id_usuario, nuevo["nombre"], nuevo["email"], rol_id, nuevo["activo"], nuevo_hash
             )
         except aiomysql.IntegrityError as error:
             raise ApiError(estado_http=409, mensaje=EMAIL_REPETIDO) from error
-        if datos.password is not None:
-            await self.repo.cambiar_password(
-                id_usuario, seguridad.hash_password(datos.password)
-            )
         return await self.obtener(id_usuario)
 
     async def desactivar(self, id_usuario: int, operador: dict[str, Any]) -> None:

@@ -11,6 +11,10 @@ def _validar_password(valor: str) -> str:
     """Política del contrato: mínimo 8 caracteres con al menos un número."""
     if len(valor) < 8 or not any(caracter.isdigit() for caracter in valor):
         raise ValueError("La contraseña necesita al menos 8 caracteres y un número.")
+    # bcrypt rechaza más de 72 BYTES (una "ñ" ocupa 2): se valida acá para
+    # devolver 422 en lugar de un 500 al hashear.
+    if len(valor.encode("utf-8")) > 72:
+        raise ValueError("La contraseña es demasiado larga (máximo 72 bytes).")
     return valor
 
 
@@ -19,15 +23,21 @@ def _normalizar_email(valor: Any) -> Any:
     return valor.strip().lower() if isinstance(valor, str) else valor
 
 
+def _recortar(valor: Any) -> Any:
+    """Saca espacios de los extremos: un nombre de solo espacios queda vacío (422)."""
+    return valor.strip() if isinstance(valor, str) else valor
+
+
 class UsuarioCrear(BaseModel):
     """Body de POST /usuarios."""
 
     nombre: str = Field(min_length=2, max_length=80)
     email: EmailStr = Field(max_length=120)
-    password: str = Field(max_length=72)  # bcrypt solo usa los primeros 72 bytes
+    password: str
     rol: Rol
 
     _email = field_validator("email", mode="before")(_normalizar_email)
+    _nombre = field_validator("nombre", mode="before")(_recortar)
 
     @field_validator("password")
     @classmethod
@@ -44,11 +54,12 @@ class UsuarioEditar(BaseModel):
 
     nombre: str | None = Field(default=None, min_length=2, max_length=80)
     email: EmailStr | None = Field(default=None, max_length=120)
-    password: str | None = Field(default=None, max_length=72)
+    password: str | None = None
     rol: Rol | None = None
     activo: bool | None = None
 
     _email = field_validator("email", mode="before")(_normalizar_email)
+    _nombre = field_validator("nombre", mode="before")(_recortar)
 
     @field_validator("nombre", "email", "password", "rol", "activo", mode="before")
     @classmethod
