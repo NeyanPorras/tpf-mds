@@ -13,7 +13,7 @@
 .pedidos-cabecera p {
   max-width: 640px;
   margin: 0.25rem 0 0;
-  color: #4b5468;
+  color: var(--texto-2);
   font-size: 0.9rem;
 }
 
@@ -27,10 +27,10 @@
 
 .filtros-barra select {
   padding: 0.5rem 0.65rem;
-  border: 1px solid #c9ced8;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 6px;
-  font-size: 0.95rem;
-  background-color: #fff;
+  font-size: var(--texto-md);
+  background-color: var(--superficie);
 }
 
 .filtro-fecha {
@@ -38,62 +38,36 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.9rem;
-  color: #39415a;
+  color: var(--tinta-2);
 }
 
-.fila-acciones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
 
-.btn-secundario {
-  background-color: #e2e8f0;
-  color: #1e293b;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.85rem;
-}
 
-.btn-secundario:hover:not(:disabled) {
-  background-color: #cbd5e1;
-}
 
-.btn-peligro {
-  background-color: #fee2e2;
-  color: #991b1b;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.85rem;
-}
 
-.btn-peligro:hover:not(:disabled) {
-  background-color: #fecaca;
-}
+
+
+
+
+
 
 .btn-confirmar {
-  background-color: #15803d;
-  color: #fff;
+  background-color: var(--exito);
+  color: var(--superficie);
   padding: 0.35rem 0.65rem;
-  font-size: 0.85rem;
+  font-size: var(--texto-sm);
 }
 
 .btn-confirmar:hover:not(:disabled) {
-  background-color: #166534;
+  background-color: var(--exito);
 }
 
 .btn-chico {
   padding: 0.25rem 0.5rem;
-  font-size: 0.8rem;
+  font-size: var(--texto-sm);
 }
 
-.aviso-exito {
-  max-width: 640px;
-  margin: 0 0 1rem;
-  padding: 0.6rem 0.9rem;
-  background-color: #e6f4ea;
-  color: #137333;
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
+
 
 /* ---- Estados del pedido ---- */
 
@@ -101,29 +75,29 @@
   display: inline-block;
   padding: 0.15rem 0.55rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: var(--texto-xs);
   font-weight: 700;
   letter-spacing: 0.02em;
 }
 
 .estado-pendiente {
-  background-color: #fbecd3;
-  color: #8a4b00;
+  background-color: var(--alerta-suave);
+  color: var(--alerta);
 }
 
 .estado-confirmado {
-  background-color: #dbeafe;
-  color: #1d4ed8;
+  background-color: var(--marca-suave);
+  color: var(--marca);
 }
 
 .estado-entregado {
-  background-color: #e1f1e1;
-  color: #2f7d32;
+  background-color: var(--exito-suave);
+  color: var(--exito);
 }
 
 .estado-cancelado {
-  background-color: #eceeef;
-  color: #5b6163;
+  background-color: var(--neutro-suave);
+  color: var(--texto-2);
 }
 
 /* ---- Aviso de falta de stock (F5) ---- */
@@ -132,10 +106,10 @@
   max-width: 760px;
   margin: 0 0 1rem;
   padding: 0.9rem 1.1rem;
-  background-color: #fdecea;
-  border-left: 6px solid #b3261e;
+  background-color: var(--peligro-suave);
+  border-left: 6px solid var(--peligro);
   border-radius: 8px;
-  color: #7f1d1d;
+  color: var(--peligro);
 }
 
 .alerta-stock h3 {
@@ -154,7 +128,7 @@
   gap: 0.6rem 1.5rem;
   margin: 0 0 0.6rem;
   padding: 0.6rem 0.75rem;
-  background-color: #fff;
+  background-color: var(--superficie);
   border-radius: 6px;
 }
 
@@ -164,10 +138,8 @@
 
 .alerta-stock-detalle dt {
   margin: 0;
-  color: #7f1d1d;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  color: var(--peligro);
+  font-size: var(--texto-xs);
 }
 
 .alerta-stock-detalle dd {
@@ -177,13 +149,13 @@
 }
 
 .alerta-stock-faltan {
-  color: #b3261e;
+  color: var(--peligro);
 }
 
 .alerta-stock-ayuda {
   margin: 0;
-  font-size: 0.83rem;
-  color: #7f1d1d;
+  font-size: var(--texto-sm);
+  color: var(--peligro);
 }
 
 /* ---- Formulario de creación con líneas ---- */
@@ -204,14 +176,14 @@
   gap: 0.75rem;
   margin: 0;
   padding: 0.75rem;
-  border: 1px solid #d7dce5;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 8px;
 }
 
 .linea-builder legend {
   padding: 0 0.35rem;
-  color: #4b5468;
-  font-size: 0.82rem;
+  color: var(--texto-2);
+  font-size: var(--texto-sm);
   font-weight: 600;
 }
 
@@ -226,36 +198,34 @@
 
 .btn-agregar {
   padding: 0.5rem 0.8rem;
-  font-size: 0.88rem;
+  font-size: var(--texto-sm);
 }
 
 .pedido-vacio {
   margin: 0;
   padding: 0.75rem;
-  background-color: #f6f7f9;
+  background-color: var(--superficie-2);
   border-radius: 6px;
-  color: #5b6577;
-  font-size: 0.88rem;
+  color: var(--texto-2);
+  font-size: var(--texto-sm);
 }
 
 .tabla-detalle {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.88rem;
+  font-size: var(--texto-sm);
 }
 
 .tabla-detalle th,
 .tabla-detalle td {
   padding: 0.45rem 0.5rem;
-  border-bottom: 1px solid #eceef3;
+  border-bottom: 1px solid var(--borde);
   text-align: left;
 }
 
 .tabla-detalle th {
-  color: #4b5468;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  color: var(--texto-2);
+  font-size: var(--texto-sm);
 }
 
 .tabla-detalle td:last-child,
@@ -264,8 +234,8 @@
 }
 
 .linea-presentacion {
-  color: #6b7488;
-  font-size: 0.82rem;
+  color: var(--texto-3);
+  font-size: var(--texto-sm);
 }
 
 .input-cantidad {
@@ -276,10 +246,10 @@
 .aviso-stock-linea {
   margin: 0;
   padding: 0.5rem 0.7rem;
-  background-color: #fbecd3;
-  color: #8a4b00;
+  background-color: var(--alerta-suave);
+  color: var(--alerta);
   border-radius: 6px;
-  font-size: 0.83rem;
+  font-size: var(--texto-sm);
 }
 
 .pedido-total {
@@ -288,7 +258,7 @@
   align-items: baseline;
   gap: 0.75rem;
   padding-top: 0.5rem;
-  border-top: 1px solid #eceef3;
+  border-top: 1px solid var(--borde);
 }
 
 .pedido-total strong {
@@ -297,8 +267,8 @@
 
 .pedido-nota {
   margin: -0.5rem 0 0;
-  color: #6b7488;
-  font-size: 0.78rem;
+  color: var(--texto-3);
+  font-size: var(--texto-sm);
   text-align: right;
 }
 
@@ -313,7 +283,7 @@
 
 .pedido-cargando {
   margin: 0;
-  color: #5b6577;
+  color: var(--texto-2);
 }
 
 .pedido-detalle {
@@ -327,20 +297,18 @@
   gap: 0.75rem;
   margin: 0;
   padding: 0.75rem;
-  background-color: #f6f7f9;
+  background-color: var(--superficie-2);
   border-radius: 8px;
 }
 
 .pedido-datos dt {
   margin: 0;
-  color: #6b7488;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  color: var(--texto-3);
+  font-size: var(--texto-xs);
 }
 
 .pedido-datos dd {
   margin: 0.15rem 0 0;
-  font-size: 0.92rem;
+  font-size: var(--texto-md);
   font-weight: 600;
 }

@@ -230,8 +230,8 @@ export default function Inicio() {
     <div className="dashboard">
       <header className="dashboard-cabecera">
         <div className="dashboard-titulo">
-          <h2>Dashboard</h2>
-          <p>Métricas clave del negocio y evolución de ventas</p>
+          <h2>Resumen</h2>
+          <p>Ventas, pedidos y stock del período elegido</p>
         </div>
 
         <div className="dashboard-filtros">
@@ -281,7 +281,7 @@ export default function Inicio() {
               className={`boton-preset ${presetActivo === 'prueba' ? 'activo' : ''}`}
               onClick={() => aplicarPreset('prueba', rangoSemillaPrueba)}
             >
-              Ago - Oct 2026 (Prueba)
+              Ago a oct 2026
             </button>
           </div>
         </div>
@@ -298,12 +298,7 @@ export default function Inicio() {
         className={`metricas-grid ${cargando ? 'dashboard-cargando' : ''}`}
       >
         <article className="tarjeta-metrica">
-          <div className="tarjeta-arriba">
-            <span className="tarjeta-etiqueta">Ventas del período</span>
-            <span className="tarjeta-icono icono-azul" aria-hidden="true">
-              $
-            </span>
-          </div>
+          <h3 className="tarjeta-etiqueta">Ventas del período</h3>
           <div className="tarjeta-valor">
             {formatear(dashboard.ventas_mes, 'moneda')}
           </div>
@@ -311,12 +306,7 @@ export default function Inicio() {
         </article>
 
         <article className="tarjeta-metrica">
-          <div className="tarjeta-arriba">
-            <span className="tarjeta-etiqueta">Clientes activos</span>
-            <span className="tarjeta-icono icono-verde" aria-hidden="true">
-              👥
-            </span>
-          </div>
+          <h3 className="tarjeta-etiqueta">Clientes activos</h3>
           <div className="tarjeta-valor">{dashboard.clientes_activos}</div>
           <p className="tarjeta-subtexto">
             Compraron en el período seleccionado
@@ -324,48 +314,30 @@ export default function Inicio() {
         </article>
 
         <article className="tarjeta-metrica">
-          <div className="tarjeta-arriba">
-            <span className="tarjeta-etiqueta">Pedidos pendientes</span>
-            <span
-              className={`tarjeta-icono ${
-                dashboard.pedidos_pendientes > 0
-                  ? 'icono-amarillo'
-                  : 'icono-verde'
-              }`}
-              aria-hidden="true"
-            >
-              ⏳
-            </span>
+          <h3 className="tarjeta-etiqueta">Pedidos pendientes</h3>
+          <div
+            className={`tarjeta-valor ${dashboard.pedidos_pendientes > 0 ? 'atencion' : ''}`}
+          >
+            {dashboard.pedidos_pendientes}
           </div>
-          <div className="tarjeta-valor">{dashboard.pedidos_pendientes}</div>
           <p className="tarjeta-subtexto">Aún no confirmados</p>
           <Link to="/pedidos" className="tarjeta-enlace">
-            Ver pedidos →
+            Ver pedidos
           </Link>
         </article>
 
         <article className="tarjeta-metrica">
-          <div className="tarjeta-arriba">
-            <span className="tarjeta-etiqueta">Stock bajo</span>
-            <span
-              className={`tarjeta-icono ${
-                dashboard.productos_bajo_minimo > 0
-                  ? 'icono-rojo'
-                  : 'icono-verde'
-              }`}
-              aria-hidden="true"
-            >
-              ⚠️
-            </span>
-          </div>
-          <div className="tarjeta-valor">
+          <h3 className="tarjeta-etiqueta">Stock bajo</h3>
+          <div
+            className={`tarjeta-valor ${dashboard.productos_bajo_minimo > 0 ? 'critico' : ''}`}
+          >
             {dashboard.productos_bajo_minimo}
           </div>
           <p className="tarjeta-subtexto">
             Productos en o por debajo del mínimo
           </p>
           <Link to="/productos" className="tarjeta-enlace">
-            Ver productos →
+            Ver productos
           </Link>
         </article>
       </section>
@@ -378,9 +350,9 @@ export default function Inicio() {
           <h3>Evolución de ventas por día</h3>
           <div className="grafico-resumen">
             Días con ventas: <strong>{diasConVenta}</strong> de{' '}
-            <strong>{cantidadDias}</strong> · Rango:{' '}
+            <strong>{cantidadDias}</strong>, del{' '}
             <strong>
-              {rangoEfectivo.desde ? fechaCorta(rangoEfectivo.desde) : '—'} —{' '}
+              {rangoEfectivo.desde ? fechaCorta(rangoEfectivo.desde) : '—'} al{' '}
               {rangoEfectivo.hasta ? fechaCorta(rangoEfectivo.hasta) : '—'}
             </strong>
           </div>
@@ -388,15 +360,12 @@ export default function Inicio() {
 
         {diasConVenta === 0 ? (
           <div className="grafico-vacio">
-            <div className="grafico-vacio-icono" aria-hidden="true">
-              📊
-            </div>
             <p>
               No se registraron ventas confirmadas en las fechas seleccionadas.
             </p>
             <small>
-              Probá ampliar el rango o seleccioná &quot;Ago - Oct 2026
-              (Prueba)&quot; para ver los datos de prueba.
+              Probá ampliar el rango o elegí &quot;Ago a oct 2026&quot;, los
+              meses con pedidos cargados.
             </small>
           </div>
         ) : (

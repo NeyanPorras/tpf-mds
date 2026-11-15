@@ -18,7 +18,7 @@ test.describe('Dashboard F6: Indicadores, Gráfico y Filtros con datos reales', 
     await page.goto('/')
 
     // Título y filtros visibles
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Resumen' })).toBeVisible()
     await expect(page.getByLabel('Desde')).toBeVisible()
     await expect(page.getByLabel('Hasta')).toBeVisible()
 
@@ -33,8 +33,8 @@ test.describe('Dashboard F6: Indicadores, Gráfico y Filtros con datos reales', 
     await expect(tarjetaStock).toContainText(/[1-9]/)
 
     // Enlaces de navegación rápida
-    await expect(page.getByRole('link', { name: 'Ver pedidos →' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Ver productos →' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Ver pedidos' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Ver productos' })).toBeVisible()
   })
 
   test('Renderiza el gráfico SVG interactivo con evolución completa de días y tooltips', async ({ page }) => {
@@ -144,7 +144,7 @@ test.describe('Dashboard F6: Indicadores, Gráfico y Filtros con datos reales', 
     await page.goto('/')
 
     // Dispara la consulta lenta
-    await page.getByRole('button', { name: 'Ago - Oct 2026 (Prueba)' }).click()
+    await page.getByRole('button', { name: 'Ago a oct 2026' }).click()
 
     // Inmediatamente cambia a "Este mes" antes de que responda la lenta
     await page.getByRole('button', { name: 'Este mes' }).click()
@@ -191,7 +191,7 @@ test.describe('Dashboard F6: Indicadores, Gráfico y Filtros con datos reales', 
     await expect(botonActualizar).toBeEnabled()
 
     // Dispara consulta lenta
-    await page.getByRole('button', { name: 'Ago - Oct 2026 (Prueba)' }).click()
+    await page.getByRole('button', { name: 'Ago a oct 2026' }).click()
 
     // Cambia la fecha 'Hasta' mientras la consulta está en vuelo
     await page.getByLabel('Hasta').fill('2026-12-31')
@@ -225,16 +225,16 @@ test.describe('Dashboard F6: Indicadores, Gráfico y Filtros con datos reales', 
     await page.goto('/')
 
     // Cargamos datos de Ago-Oct (92 días)
-    await page.getByRole('button', { name: 'Ago - Oct 2026 (Prueba)' }).click()
+    await page.getByRole('button', { name: 'Ago a oct 2026' }).click()
     const resumenGrafico = page.locator('.grafico-resumen')
-    await expect(resumenGrafico).toContainText('01/08/2026 — 31/10/2026')
+    await expect(resumenGrafico).toContainText('01/08/2026 al 31/10/2026')
     await expect(resumenGrafico).toContainText('92')
 
     // Cambiamos 'Hasta' en el input a diciembre SIN apretar 'Actualizar'
     await page.getByLabel('Hasta').fill('2026-12-31')
 
-    // El gráfico y su resumen deben seguir mostrando 01/08/2026 — 31/10/2026 (92 días)
-    await expect(resumenGrafico).toContainText('01/08/2026 — 31/10/2026')
+    // El gráfico y su resumen deben seguir mostrando 01/08/2026 al 31/10/2026 (92 días)
+    await expect(resumenGrafico).toContainText('01/08/2026 al 31/10/2026')
     await expect(resumenGrafico).toContainText('92')
     await expect(resumenGrafico).not.toContainText('31/12/2026')
   })
@@ -244,14 +244,14 @@ test.describe('Dashboard F6: Indicadores, Gráfico y Filtros con datos reales', 
     await page.goto('/')
 
     // Ir a pedidos
-    await page.getByRole('link', { name: 'Ver pedidos →' }).click()
+    await page.getByRole('link', { name: 'Ver pedidos' }).click()
     await expect(page).toHaveURL(/\/pedidos/)
 
     // Volver a dashboard
     await page.goto('/')
 
     // Ir a productos
-    await page.getByRole('link', { name: 'Ver productos →' }).click()
+    await page.getByRole('link', { name: 'Ver productos' }).click()
     await expect(page).toHaveURL(/\/productos/)
   })
 
@@ -259,20 +259,20 @@ test.describe('Dashboard F6: Indicadores, Gráfico y Filtros con datos reales', 
     await loguearUsuario(page, VENDEDOR, 'Valen Vendedor')
     await page.goto('/')
 
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Resumen' })).toBeVisible()
     await expect(page.getByText('Ventas del período')).toBeVisible()
     await expect(page.getByText('Clientes activos')).toBeVisible()
 
     // Cambia fechas con los presets
     await page.getByRole('button', { name: 'Últimos 30 días' }).click()
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Resumen' })).toBeVisible()
   })
 
   test('El dashboard es visible y funcional para rol DEPOSITO', async ({ page }) => {
     await loguearUsuario(page, DEPOSITO, 'Dami Deposito')
     await page.goto('/')
 
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Resumen' })).toBeVisible()
     await expect(page.getByText('Pedidos pendientes')).toBeVisible()
     await expect(page.getByText('Stock bajo')).toBeVisible()
 

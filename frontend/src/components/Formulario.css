@@ -10,18 +10,18 @@
 }
 
 .formulario-campo span {
-  color: #39415a;
+  color: var(--tinta-2);
 }
 
 .formulario-error {
   margin: 0;
-  color: #b3261e;
-  font-size: 0.82rem;
+  color: var(--peligro);
+  font-size: var(--texto-sm);
 }
 
 .formulario-error-general {
   padding: 0.5rem 0.75rem;
-  background-color: #fdecea;
+  background-color: var(--peligro-suave);
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: var(--texto-sm);
 }

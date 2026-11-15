@@ -45,7 +45,7 @@ Los responsables son una sugerencia según el rol de cada uno en el tablero; el 
 
 1. Ingresar con `admin@distribuidora.com` / `Admin123!`.
 2. Mostrar el menú: 8 secciones, incluida **Usuarios**, que solo ve el ADMIN.
-3. En el dashboard, tocar **Ago - Oct 2026 (Prueba)** (los datos de prueba son de esos meses). Se ve:
+3. En el resumen de Inicio, tocar **Ago a oct 2026** (los datos de prueba son de esos meses). Se ve:
    - Ventas del período: **$ 14.269.200,00**
    - Clientes activos: **13**
    - Pedidos pendientes: **6**

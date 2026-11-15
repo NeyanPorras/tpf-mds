@@ -8,7 +8,7 @@
   display: grid;
   gap: 1rem;
   width: min(360px, 90vw);
-  background-color: #fff;
+  background-color: var(--superficie);
   border-radius: 10px;
   padding: 2rem;
   box-shadow: 0 8px 30px rgba(20, 28, 45, 0.15);
@@ -27,12 +27,7 @@
 
 .login .error {
   margin: 0;
-  color: #b3261e;
+  color: var(--peligro);
   font-size: 0.9rem;
 }
 
-.login .nota {
-  margin: 0;
-  color: #68738a;
-  font-size: 0.8rem;
-}

@@ -8,7 +8,7 @@
 
 .reportes-cabecera p {
   margin: 0.25rem 0 0;
-  color: #4b5468;
+  color: var(--texto-2);
   font-size: 0.9rem;
 }
 
@@ -24,17 +24,17 @@
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  font-size: 0.85rem;
-  color: #334155;
+  font-size: var(--texto-sm);
+  color: var(--tinta);
 }
 
 .reportes-filtros select,
 .reportes-filtros input {
   padding: 0.5rem 0.65rem;
-  border: 1px solid #c9ced8;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 6px;
-  font-size: 0.95rem;
-  background-color: #fff;
+  font-size: var(--texto-md);
+  background-color: var(--superficie);
 }
 
 .reportes-filtros input[type='number'] {
@@ -42,14 +42,14 @@
 }
 
 .reportes-falla {
-  color: #b91c1c;
-  font-size: 0.8rem;
+  color: var(--peligro);
+  font-size: var(--texto-sm);
 }
 
 .reportes-descripcion {
   margin: 0 0 1rem;
-  color: #4b5468;
-  font-size: 0.85rem;
+  color: var(--texto-2);
+  font-size: var(--texto-sm);
 }
 
 .reportes-acciones {
@@ -61,24 +61,24 @@
 
 .reportes-acciones span {
   margin-right: auto;
-  color: #4b5468;
+  color: var(--texto-2);
   font-size: 0.9rem;
 }
 
 .reportes-acciones .btn-secundario {
-  background-color: #e2e8f0;
-  color: #1e293b;
+  background-color: var(--borde);
+  color: var(--tinta);
   padding: 0.35rem 0.75rem;
-  font-size: 0.85rem;
+  font-size: var(--texto-sm);
 }
 
 .reportes-acciones .btn-secundario:hover:not(:disabled) {
-  background-color: #cbd5e1;
+  background-color: var(--borde-fuerte);
 }
 
 .reportes-aplicados {
   display: block;
   margin-top: 0.15rem;
-  font-size: 0.8rem;
-  color: #64748b;
+  font-size: var(--texto-sm);
+  color: var(--texto-3);
 }
