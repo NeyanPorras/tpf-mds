@@ -4,12 +4,12 @@
 
 .placeholder p {
   margin: 0 0 0.5rem;
-  color: #4b5468;
+  color: var(--texto-2);
 }
 
 .placeholder .tarea {
-  font-size: 0.85rem;
-  color: #7a8299;
+  font-size: var(--texto-sm);
+  color: var(--texto-3);
 }
 
 .prueba401 {
@@ -18,7 +18,7 @@
   align-items: center;
   gap: 0.75rem;
   font-size: 0.9rem;
-  color: #4b5468;
+  color: var(--texto-2);
 }
 
 .prueba401 p {

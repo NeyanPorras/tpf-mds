@@ -51,10 +51,6 @@ export default function Login() {
         <button type="submit" disabled={cargando}>
           {cargando ? 'Ingresando…' : 'Ingresar'}
         </button>
-        <p className="nota">
-          El menú y las rutas se adaptan al rol: Productos y Pedidos para
-          todos, Clientes solo para ventas, Usuarios solo para administración.
-        </p>
       </form>
     </main>
   )

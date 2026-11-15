@@ -28,9 +28,4 @@ export function esError401(error) {
   return error instanceof AxiosError && error.response?.status === 401
 }
 
-export function mensajeDeError(error) {
-  if (error instanceof AxiosError) {
-    return error.response?.data?.error?.message ?? 'Error inesperado. Intentá de nuevo.'
-  }
-  return 'Error inesperado. Intentá de nuevo.'
-}
+export { mensajeDeError } from './errores.js'

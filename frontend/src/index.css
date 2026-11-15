@@ -1,9 +1,58 @@
+/*
+ * Design tokens. Every color in the app comes from here: no hex values in the
+ * page stylesheets. The brand blue marks primary actions, the current
+ * selection and focus; the state colors carry meaning (order status, stock,
+ * success and error messages) and are never decoration.
+ */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Brand */
+  --marca: #2249c8;
+  --marca-fuerte: #1a3aa6;
+  --marca-suave: #e8eefc;
+
+  /* Ink, from strongest to faintest. All pass 4.5:1 on --superficie. */
+  --tinta: #1e2430;
+  --tinta-2: #39415a;
+  --texto-2: #4b5468;
+  --texto-3: #626d82;
+
+  /* Surfaces and lines */
+  --fondo: #f4f5f7;
+  --superficie: #ffffff;
+  --superficie-2: #f7f8fa;
+  --borde: #e1e4ea;
+  --borde-fuerte: #c9ced8;
+
+  /* Sidebar and table headers */
+  --lateral: #1c2333;
+  --lateral-2: #2a3350;
+  --lateral-borde: #465377;
+  --lateral-texto: #aab3c5;
+
+  /* States */
+  --peligro: #b3261e;
+  --peligro-suave: #fdecea;
+  --peligro-borde: #f6c9c4;
+  --exito: #137333;
+  --exito-suave: #e6f4ea;
+  --alerta: #8a4b00;
+  --alerta-suave: #fbecd3;
+  --neutro-suave: #eceeef;
+
+  /* Type scale (1.125 steps) */
+  --texto-xs: 0.75rem;
+  --texto-sm: 0.85rem;
+  --texto-md: 0.95rem;
+  --texto-lg: 1.1rem;
+  --texto-xl: 1.35rem;
+  --texto-2xl: 1.75rem;
+
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #1e2430;
-  background-color: #f4f5f7;
+  color: var(--tinta);
+  background-color: var(--fondo);
+  font-variant-numeric: tabular-nums;
 }
 
 * {
@@ -20,22 +69,35 @@ body {
   min-height: 100vh;
 }
 
+::selection {
+  background-color: var(--marca-suave);
+  color: var(--tinta);
+}
+
 h1 {
-  font-size: 1.1rem;
+  font-size: var(--texto-lg);
 }
 
 h2 {
-  font-size: 1.5rem;
+  font-size: var(--texto-xl);
   margin: 0 0 0.5rem;
+}
+
+/* Form controls do not inherit the page font by default. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 button {
   border: none;
   border-radius: 6px;
   padding: 0.55rem 1rem;
-  background-color: #2249c8;
-  color: #fff;
-  font-size: 0.95rem;
+  background-color: var(--marca);
+  color: var(--superficie);
+  font-size: var(--texto-md);
   cursor: pointer;
 }
 
@@ -45,22 +107,65 @@ button:disabled {
 }
 
 button:hover:not(:disabled) {
-  background-color: #1a3aa6;
+  background-color: var(--marca-fuerte);
+}
+
+:focus-visible {
+  outline: 2px solid var(--marca);
+  outline-offset: 2px;
 }
 
 input {
   padding: 0.5rem 0.65rem;
-  border: 1px solid #c9ced8;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: var(--texto-md);
 }
 
-.aviso-error {
+/* Row actions shared by every list screen. */
+.fila-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.btn-secundario {
+  background-color: var(--borde);
+  color: var(--tinta);
+  padding: 0.35rem 0.65rem;
+  font-size: var(--texto-sm);
+}
+
+.btn-secundario:hover:not(:disabled) {
+  background-color: var(--borde-fuerte);
+}
+
+.btn-peligro {
+  background-color: var(--peligro-suave);
+  color: var(--peligro);
+  padding: 0.35rem 0.65rem;
+  font-size: var(--texto-sm);
+}
+
+.btn-peligro:hover:not(:disabled) {
+  background-color: var(--peligro-borde);
+}
+
+.aviso-error,
+.aviso-exito {
   max-width: 640px;
   margin: 0 0 1rem;
   padding: 0.6rem 0.9rem;
-  background-color: #fdecea;
-  color: #b3261e;
   border-radius: 6px;
   font-size: 0.9rem;
+}
+
+.aviso-error {
+  background-color: var(--peligro-suave);
+  color: var(--peligro);
+}
+
+.aviso-exito {
+  background-color: var(--exito-suave);
+  color: var(--exito);
 }

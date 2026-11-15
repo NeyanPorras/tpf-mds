@@ -12,7 +12,7 @@
 
 .usuarios-cabecera p {
   margin: 0.25rem 0 0;
-  color: #4b5468;
+  color: var(--texto-2);
   font-size: 0.9rem;
 }
 
@@ -20,16 +20,16 @@
   display: inline-block;
   padding: 0.1rem 0.55rem;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: var(--texto-sm);
   font-weight: 600;
 }
 
 .usuario-estado.activo {
-  background-color: #e6f4ea;
-  color: #137333;
+  background-color: var(--exito-suave);
+  color: var(--exito);
 }
 
 .usuario-estado.inactivo {
-  background-color: #eef0f4;
-  color: #5b6475;
+  background-color: var(--borde);
+  color: var(--texto-2);
 }
